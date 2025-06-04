@@ -45,7 +45,7 @@ export function registerRoutes(app: Express): Server {
         hasOpenAiKey: !!(keys?.openaiApiKey),
         hasBraveSearchKey: !!(keys?.braveSearchApiKey),
         hasPerplexityKey: !!(keys?.perplexityApiKey),
-        amoCrmSubdomain: keys?.amoCrmSubdomain || "",
+        amoCrmSubdomain: keys?.amoCrmSubdomain || null,
       });
     } catch (error) {
       console.error('Failed to get API keys:', error);

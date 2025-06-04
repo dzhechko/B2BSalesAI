@@ -73,7 +73,10 @@ export default function Settings() {
   // Update form values when data is loaded
   useEffect(() => {
     if (apiKeysStatus) {
-      apiKeysForm.setValue("amoCrmSubdomain", apiKeysStatus.amoCrmSubdomain || "");
+      // Only set subdomain if it exists, otherwise leave empty
+      if (apiKeysStatus.amoCrmSubdomain) {
+        apiKeysForm.setValue("amoCrmSubdomain", apiKeysStatus.amoCrmSubdomain);
+      }
     }
   }, [apiKeysStatus, apiKeysForm]);
 
