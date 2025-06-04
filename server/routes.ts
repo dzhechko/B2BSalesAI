@@ -45,6 +45,8 @@ interface SearchResult {
     date: string;
     content: string;
   }>;
+  companySummary?: string;
+  contactSummary?: string;
 }
 
 export function registerRoutes(app: Express): Server {
@@ -245,8 +247,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Search for company information
+      let companySearchResults = [];
       if (companyName) {
-        const companyQuery = `${companyName} отрасль выручка сотрудники основные продукты 2024`;
+        const companyQuery = `${companyName} отрасль выручка сотрудники основные продукты 2025`;
         console.log(`Starting data collection for company: ${companyName}`);
         console.log(`Search query: ${companyQuery}`);
         
@@ -259,12 +262,13 @@ export function registerRoutes(app: Express): Server {
             collectedData.revenue = braveResult.revenue;
             collectedData.employees = braveResult.employees;
             collectedData.products = braveResult.products;
+            companySearchResults.push(`Brave Search: ${JSON.stringify(braveResult)}`);
           }
         }
 
-        // Fallback to Perplexity if data is incomplete
-        if (apiKeys.perplexityApiKey && (!collectedData.industry || !collectedData.revenue)) {
-          console.log('Using Perplexity API as fallback');
+        // Always use Perplexity after Brave Search
+        if (apiKeys.perplexityApiKey) {
+          console.log('Using Perplexity API');
           const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey);
           console.log('Perplexity Search result:', perplexityResult);
           if (perplexityResult) {
@@ -272,6 +276,36 @@ export function registerRoutes(app: Express): Server {
             collectedData.revenue = collectedData.revenue || perplexityResult.revenue;
             collectedData.employees = collectedData.employees || perplexityResult.employees;
             collectedData.products = collectedData.products || perplexityResult.products;
+            companySearchResults.push(`Perplexity: ${JSON.stringify(perplexityResult)}`);
+          }
+        }
+
+        // Generate company summary using GPT-4o
+        if (apiKeys.openaiApiKey && companySearchResults.length > 0) {
+          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
+          const companyPrompt = `
+Создай краткое саммари данных о компании ${companyName} на основе результатов поиска:
+
+${companySearchResults.join('\n\n')}
+
+Саммари должно быть структурированным и включать:
+- Отрасль деятельности
+- Финансовые показатели
+- Размер компании
+- Ключевые продукты/услуги
+
+Ответь коротким текстом на русском языке (максимум 150 слов).`;
+
+          try {
+            const summaryResponse = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [{ role: "user", content: companyPrompt }],
+              temperature: 0.3,
+            });
+            
+            collectedData.companySummary = summaryResponse.choices[0].message.content || undefined;
+          } catch (error) {
+            console.error('Failed to generate company summary:', error);
           }
         }
       } else {
@@ -279,22 +313,55 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Search for contact information
+      let contactSearchResults = [];
       if (contact.name && companyName) {
-        const contactQuery = `${contact.name} ${companyName} LinkedIn должность социальные сети`;
+        const contactQuery = `${contact.name} должность в ${companyName} 3 последние публикации в соц сетях`;
+        console.log(`Starting contact search: ${contactQuery}`);
         
         if (apiKeys.braveSearchApiKey) {
           const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey);
           if (braveContactResult) {
             collectedData.jobTitle = braveContactResult.jobTitle;
             collectedData.socialPosts = braveContactResult.socialPosts;
+            contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactResult)}`);
           }
         }
 
-        if (apiKeys.perplexityApiKey && !collectedData.jobTitle) {
+        // Always use Perplexity after Brave Search for contact
+        if (apiKeys.perplexityApiKey) {
           const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey);
           if (perplexityContactResult) {
             collectedData.jobTitle = collectedData.jobTitle || perplexityContactResult.jobTitle;
             collectedData.socialPosts = collectedData.socialPosts || perplexityContactResult.socialPosts;
+            contactSearchResults.push(`Perplexity: ${JSON.stringify(perplexityContactResult)}`);
+          }
+        }
+
+        // Generate contact summary using GPT-4o
+        if (apiKeys.openaiApiKey && contactSearchResults.length > 0) {
+          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
+          const contactPrompt = `
+Создай краткое саммари данных о контакте ${contact.name} из компании ${companyName} на основе результатов поиска:
+
+${contactSearchResults.join('\n\n')}
+
+Саммари должно включать:
+- Текущую должность
+- Профессиональную активность
+- Ключевые темы публикаций
+
+Ответь коротким текстом на русском языке (максимум 100 слов).`;
+
+          try {
+            const contactSummaryResponse = await openai.chat.completions.create({
+              model: "gpt-4o", 
+              messages: [{ role: "user", content: contactPrompt }],
+              temperature: 0.3,
+            });
+            
+            collectedData.contactSummary = contactSummaryResponse.choices[0].message.content;
+          } catch (error) {
+            console.error('Failed to generate contact summary:', error);
           }
         }
       }

@@ -22,6 +22,8 @@ interface CollectedData {
     date: string;
     content: string;
   }>;
+  companySummary?: string;
+  contactSummary?: string;
 }
 import { useToast } from "@/hooks/use-toast";
 
@@ -332,6 +334,16 @@ export default function ContactDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {(contact.collectedData as CollectedData)?.companySummary && (
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                          САММАРИ КОМПАНИИ
+                        </span>
+                        <p className="mt-2 text-gray-900 dark:text-white leading-relaxed">
+                          {(contact.collectedData as CollectedData).companySummary}
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                         ОТРАСЛЬ
@@ -378,6 +390,16 @@ export default function ContactDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {(contact.collectedData as CollectedData)?.contactSummary && (
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <span className="text-sm font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">
+                          САММАРИ КОНТАКТА
+                        </span>
+                        <p className="mt-2 text-gray-900 dark:text-white leading-relaxed">
+                          {(contact.collectedData as CollectedData).contactSummary}
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                         ДОЛЖНОСТЬ
