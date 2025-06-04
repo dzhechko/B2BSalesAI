@@ -274,15 +274,15 @@ ${playbook}
 
 ИНФОРМАЦИЯ О КОМПАНИИ:
 - Название: ${contact.company}
-- Отрасль: ${contact.collectedData?.industry || 'Не указана'}
-- Выручка: ${contact.collectedData?.revenue || 'Не указана'}
-- Количество сотрудников: ${contact.collectedData?.employees || 'Не указано'}
-- Основные продукты: ${contact.collectedData?.products || 'Не указаны'}
+- Отрасль: ${(contact.collectedData as any)?.industry || 'Не указана'}
+- Выручка: ${(contact.collectedData as any)?.revenue || 'Не указана'}
+- Количество сотрудников: ${(contact.collectedData as any)?.employees || 'Не указано'}
+- Основные продукты: ${(contact.collectedData as any)?.products || 'Не указаны'}
 
 ИНФОРМАЦИЯ О КОНТАКТЕ:
 - Имя: ${contact.name}
-- Должность: ${contact.position || contact.collectedData?.jobTitle || 'Не указана'}
-- Последние публикации: ${contact.collectedData?.socialPosts?.map(post => post.content).join('; ') || 'Нет данных'}
+- Должность: ${contact.position || (contact.collectedData as any)?.jobTitle || 'Не указана'}
+- Последние публикации: ${(contact.collectedData as any)?.socialPosts?.map((post: any) => post.content).join('; ') || 'Нет данных'}
 
 Для каждой рекомендации укажи:
 1. Название продукта/решения
