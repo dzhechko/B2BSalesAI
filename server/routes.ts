@@ -179,9 +179,13 @@ export function registerRoutes(app: Express): Server {
       // Search for company information
       if (contact.company) {
         const companyQuery = `${contact.company} отрасль выручка сотрудники основные продукты 2024`;
+        console.log(`Starting data collection for company: ${contact.company}`);
+        console.log(`Search query: ${companyQuery}`);
         
         if (apiKeys.braveSearchApiKey) {
+          console.log('Using Brave Search API');
           const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey);
+          console.log('Brave Search result:', braveResult);
           if (braveResult) {
             collectedData.industry = braveResult.industry;
             collectedData.revenue = braveResult.revenue;
@@ -192,7 +196,9 @@ export function registerRoutes(app: Express): Server {
 
         // Fallback to Perplexity if data is incomplete
         if (apiKeys.perplexityApiKey && (!collectedData.industry || !collectedData.revenue)) {
+          console.log('Using Perplexity API as fallback');
           const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey);
+          console.log('Perplexity Search result:', perplexityResult);
           if (perplexityResult) {
             collectedData.industry = collectedData.industry || perplexityResult.industry;
             collectedData.revenue = collectedData.revenue || perplexityResult.revenue;
@@ -223,6 +229,8 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
+      console.log('Final collected data:', collectedData);
+
       // Update contact with collected data
       const updatedContact = await storage.createOrUpdateContact({
         userId: contact.userId,
@@ -238,6 +246,7 @@ export function registerRoutes(app: Express): Server {
         recommendations: contact.recommendations as any,
       });
 
+      console.log('Updated contact with collected data');
       res.json(updatedContact);
     } catch (error) {
       console.error('Failed to collect data:', error);
@@ -421,10 +430,15 @@ async function searchWithPerplexity(query: string, apiKey: string): Promise<Sear
 }
 
 function parseSearchResults(results: any[]): SearchResult {
-  // Simple parsing logic - could be enhanced with more sophisticated extraction
-  const combinedText = results.map(r => r.description || '').join(' ').toLowerCase();
+  if (!results || results.length === 0) {
+    console.log('No search results to parse');
+    return {};
+  }
   
-  return {
+  const combinedText = results.map(r => `${r.title || ''} ${r.description || ''} ${r.snippet || ''}`).join(' ').toLowerCase();
+  console.log('Combined search text for parsing:', combinedText.substring(0, 200) + '...');
+  
+  const result = {
     industry: extractIndustry(combinedText),
     revenue: extractRevenue(combinedText),
     employees: extractEmployees(combinedText),
@@ -432,6 +446,9 @@ function parseSearchResults(results: any[]): SearchResult {
     jobTitle: extractJobTitle(combinedText),
     socialPosts: extractSocialPosts(results),
   };
+  
+  console.log('Parsed search results:', result);
+  return result;
 }
 
 function parsePerplexityResponse(content: string): SearchResult {

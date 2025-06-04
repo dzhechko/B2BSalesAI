@@ -174,6 +174,44 @@ export default function ContactDetail() {
                           {contact.status || 'Не указан'}
                         </Badge>
                       </div>
+                      {/* LinkedIn Field */}
+                      {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                        field.field_name?.toLowerCase().includes('linkedin'))?.values?.[0]?.value && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">LinkedIn:</span>
+                          <p className="font-medium text-blue-600 dark:text-blue-400">
+                            <a 
+                              href={contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                                field.field_name?.toLowerCase().includes('linkedin'))?.values?.[0]?.value}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                                field.field_name?.toLowerCase().includes('linkedin'))?.values?.[0]?.value}
+                            </a>
+                          </p>
+                        </div>
+                      )}
+                      {/* VK Field */}
+                      {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                        field.field_name?.toLowerCase().includes('вк'))?.values?.[0]?.value && (
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">ВКонтакте:</span>
+                          <p className="font-medium text-blue-600 dark:text-blue-400">
+                            <a 
+                              href={contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                                field.field_name?.toLowerCase().includes('вк'))?.values?.[0]?.value}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                                field.field_name?.toLowerCase().includes('вк'))?.values?.[0]?.value}
+                            </a>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
