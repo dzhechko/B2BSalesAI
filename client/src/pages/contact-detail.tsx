@@ -506,6 +506,12 @@ export default function ContactDetail() {
                             {(() => {
                               try {
                                 const data = JSON.parse(searchQuery.response);
+                                const hasAnyData = data.industry || data.revenue || data.employees || data.products || data.jobTitle || (data.socialPosts && data.socialPosts.length > 0);
+                                
+                                if (!hasAnyData) {
+                                  return <span className="text-gray-500">Данные не найдены</span>;
+                                }
+                                
                                 return (
                                   <div className="space-y-2">
                                     {data.industry && (
@@ -529,7 +535,7 @@ export default function ContactDetail() {
                                     {data.products && (
                                       <div className="flex">
                                         <span className="font-medium w-24">Продукты:</span>
-                                        <span>{data.products}</span>
+                                        <span>{Array.isArray(data.products) ? data.products.join(', ') : data.products}</span>
                                       </div>
                                     )}
                                     {data.jobTitle && (
@@ -553,7 +559,7 @@ export default function ContactDetail() {
                                   </div>
                                 );
                               } catch (e) {
-                                return <span className="text-gray-500">Ошибка парсинга данных</span>;
+                                return <span className="text-gray-500">Ошибка парсинга данных: {String(e)}</span>;
                               }
                             })()}
                           </div>

@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertApiKeysSchema, insertUserSettingsSchema } from "@shared/schema";
@@ -240,6 +241,22 @@ export function registerRoutes(app: Express): Server {
       if (!hasBraveEnabled && !hasPerplexityEnabled) {
         return res.status(400).json({ message: "No search systems configured or enabled in settings" });
       }
+
+      // Функция для отправки обновления прогресса
+      const sendProgressUpdate = (stage: 'company' | 'contact' | 'analysis') => {
+        const wss = (app as any).wss;
+        if (wss) {
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === 1) { // WebSocket.OPEN
+              client.send(JSON.stringify({
+                type: 'progress',
+                contactId: contact.id,
+                stage: stage
+              }));
+            }
+          });
+        }
+      };
 
       const collectedData: SearchResult = {
         searchQueries: []
@@ -908,4 +925,23 @@ function getDefaultPlaybook(): string {
 - Соответствие требованиям безопасности
 - Гибкая настройка под бизнес-процессы
 `;
+}
+
+  const httpServer = createServer(app);
+  
+  // Setup WebSocket server for progress tracking
+  const wss = new WebSocketServer({ server: httpServer });
+  
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+    });
+  });
+  
+  // Store WebSocket server reference for broadcasting progress updates
+  (app as any).wss = wss;
+
+  return httpServer;
 }
