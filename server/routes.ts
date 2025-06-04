@@ -97,7 +97,12 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const settings = await storage.getUserSettings(req.user!.id);
-      res.json(settings || { theme: "light", playbook: null, preferences: {} });
+      res.json(settings || { 
+        theme: "light", 
+        playbook: null, 
+        searchSystems: ["brave", "perplexity"],
+        preferences: {} 
+      });
     } catch (error) {
       console.error('Failed to get user settings:', error);
       res.status(500).json({ message: "Failed to get settings" });
@@ -221,15 +226,10 @@ export function registerRoutes(app: Express): Server {
       }
 
       const apiKeys = await storage.getApiKeys(req.user!.id);
+      const userSettings = await storage.getUserSettings(req.user!.id);
       
-      // Get enabled search systems (fallback to both if field doesn't exist)
-      let enabledSystems = ["brave", "perplexity"];
-      try {
-        const userSettings = await storage.getUserSettings(req.user!.id);
-        enabledSystems = (userSettings?.searchSystems as string[]) || ["brave", "perplexity"];
-      } catch (error) {
-        console.log('Using default search systems (field not exists):', enabledSystems);
-      }
+      // Get enabled search systems from user settings
+      const enabledSystems = (userSettings?.searchSystems as string[]) || ["brave", "perplexity"];
       
       // Check that at least one enabled system has API credentials
       const hasBraveEnabled = enabledSystems.includes("brave") && apiKeys?.braveSearchApiKey;
