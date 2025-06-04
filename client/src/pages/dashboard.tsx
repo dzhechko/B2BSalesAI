@@ -18,7 +18,15 @@ export default function Dashboard() {
     queryKey: ["/api/contacts"],
   });
 
-  const { data: apiKeys } = useQuery({
+  type ApiKeysStatus = {
+    hasAmoCrmToken: boolean;
+    hasOpenAiKey: boolean;
+    hasBraveSearchKey: boolean;
+    hasPerplexityKey: boolean;
+    amoCrmSubdomain: string;
+  };
+
+  const { data: apiKeys } = useQuery<ApiKeysStatus>({
     queryKey: ["/api/keys"],
   });
 
@@ -43,7 +51,7 @@ export default function Dashboard() {
     }
   };
 
-  const isAmoCrmConnected = apiKeys?.hasAmoCrmKey;
+  const isAmoCrmConnected = apiKeys?.hasAmoCrmToken;
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
