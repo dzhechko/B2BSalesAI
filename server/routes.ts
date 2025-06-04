@@ -1,0 +1,568 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { insertApiKeysSchema, insertUserSettingsSchema } from "@shared/schema";
+import OpenAI from "openai";
+
+interface AmoCRMContact {
+  id: number;
+  name: string;
+  custom_fields_values?: Array<{
+    field_name: string;
+    values: Array<{ value: string }>;
+  }>;
+  company?: {
+    name: string;
+  };
+}
+
+interface SearchResult {
+  industry?: string;
+  revenue?: string;
+  employees?: string;
+  products?: string;
+  jobTitle?: string;
+  socialPosts?: Array<{
+    platform: string;
+    date: string;
+    content: string;
+  }>;
+}
+
+export function registerRoutes(app: Express): Server {
+  setupAuth(app);
+
+  // API Keys management
+  app.get("/api/keys", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const keys = await storage.getApiKeys(req.user!.id);
+      // Don't send actual key values, just indicate if they exist
+      res.json({
+        hasAmoCrmKey: !!(keys?.amoCrmApiKey),
+        hasOpenAiKey: !!(keys?.openaiApiKey),
+        hasBraveSearchKey: !!(keys?.braveSearchApiKey),
+        hasPerplexityKey: !!(keys?.perplexityApiKey),
+        amoCrmSubdomain: keys?.amoCrmSubdomain || "",
+      });
+    } catch (error) {
+      console.error('Failed to get API keys:', error);
+      res.status(500).json({ message: "Failed to get API keys" });
+    }
+  });
+
+  app.post("/api/keys", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const validatedKeys = insertApiKeysSchema.parse(req.body);
+      await storage.createOrUpdateApiKeys(req.user!.id, validatedKeys);
+      res.json({ message: "API keys updated successfully" });
+    } catch (error) {
+      console.error('Failed to update API keys:', error);
+      res.status(400).json({ message: "Invalid API keys data" });
+    }
+  });
+
+  // User settings
+  app.get("/api/settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const settings = await storage.getUserSettings(req.user!.id);
+      res.json(settings || { theme: "light", playbook: null, preferences: {} });
+    } catch (error) {
+      console.error('Failed to get user settings:', error);
+      res.status(500).json({ message: "Failed to get settings" });
+    }
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const validatedSettings = insertUserSettingsSchema.parse(req.body);
+      const settings = await storage.createOrUpdateUserSettings(req.user!.id, validatedSettings);
+      res.json(settings);
+    } catch (error) {
+      console.error('Failed to update user settings:', error);
+      res.status(400).json({ message: "Invalid settings data" });
+    }
+  });
+
+  // Contacts from AmoCRM
+  app.get("/api/contacts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const apiKeys = await storage.getApiKeys(req.user!.id);
+      if (!apiKeys?.amoCrmApiKey || !apiKeys?.amoCrmSubdomain) {
+        return res.status(400).json({ message: "AmoCRM credentials not configured" });
+      }
+
+      // Fetch contacts from AmoCRM
+      const amoCrmResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts`, {
+        headers: {
+          'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!amoCrmResponse.ok) {
+        throw new Error(`AmoCRM API error: ${amoCrmResponse.status}`);
+      }
+
+      const amoCrmData = await amoCrmResponse.json();
+      const contacts = amoCrmData._embedded?.contacts || [];
+
+      // Store/update contacts in our database
+      const processedContacts = [];
+      for (const contact of contacts) {
+        const processedContact = await storage.createOrUpdateContact({
+          userId: req.user!.id,
+          amoCrmId: contact.id.toString(),
+          name: contact.name,
+          email: extractContactField(contact, 'EMAIL'),
+          phone: extractContactField(contact, 'PHONE'),
+          position: extractContactField(contact, 'POSITION'),
+          company: contact.company?.name || extractContactField(contact, 'COMPANY'),
+          status: getContactStatus(contact),
+          amoCrmData: contact,
+          collectedData: null,
+          recommendations: null,
+        });
+        processedContacts.push(processedContact);
+      }
+
+      res.json(processedContacts);
+    } catch (error) {
+      console.error('Failed to fetch contacts:', error);
+      res.status(500).json({ message: "Failed to fetch contacts from AmoCRM" });
+    }
+  });
+
+  // Get specific contact
+  app.get("/api/contacts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const contact = await storage.getContact(parseInt(req.params.id), req.user!.id);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      res.json(contact);
+    } catch (error) {
+      console.error('Failed to get contact:', error);
+      res.status(500).json({ message: "Failed to get contact" });
+    }
+  });
+
+  // Collect data for a contact
+  app.post("/api/contacts/:id/collect-data", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const contact = await storage.getContact(parseInt(req.params.id), req.user!.id);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+
+      const apiKeys = await storage.getApiKeys(req.user!.id);
+      if (!apiKeys?.braveSearchApiKey && !apiKeys?.perplexityApiKey) {
+        return res.status(400).json({ message: "Search API credentials not configured" });
+      }
+
+      const collectedData: SearchResult = {};
+
+      // Search for company information
+      if (contact.company) {
+        const companyQuery = `${contact.company} отрасль выручка сотрудники основные продукты 2024`;
+        
+        if (apiKeys.braveSearchApiKey) {
+          const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey);
+          if (braveResult) {
+            collectedData.industry = braveResult.industry;
+            collectedData.revenue = braveResult.revenue;
+            collectedData.employees = braveResult.employees;
+            collectedData.products = braveResult.products;
+          }
+        }
+
+        // Fallback to Perplexity if data is incomplete
+        if (apiKeys.perplexityApiKey && (!collectedData.industry || !collectedData.revenue)) {
+          const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey);
+          if (perplexityResult) {
+            collectedData.industry = collectedData.industry || perplexityResult.industry;
+            collectedData.revenue = collectedData.revenue || perplexityResult.revenue;
+            collectedData.employees = collectedData.employees || perplexityResult.employees;
+            collectedData.products = collectedData.products || perplexityResult.products;
+          }
+        }
+      }
+
+      // Search for contact information
+      if (contact.name && contact.company) {
+        const contactQuery = `${contact.name} ${contact.company} LinkedIn должность социальные сети`;
+        
+        if (apiKeys.braveSearchApiKey) {
+          const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey);
+          if (braveContactResult) {
+            collectedData.jobTitle = braveContactResult.jobTitle;
+            collectedData.socialPosts = braveContactResult.socialPosts;
+          }
+        }
+
+        if (apiKeys.perplexityApiKey && !collectedData.jobTitle) {
+          const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey);
+          if (perplexityContactResult) {
+            collectedData.jobTitle = collectedData.jobTitle || perplexityContactResult.jobTitle;
+            collectedData.socialPosts = collectedData.socialPosts || perplexityContactResult.socialPosts;
+          }
+        }
+      }
+
+      // Update contact with collected data
+      const updatedContact = await storage.createOrUpdateContact({
+        ...contact,
+        collectedData,
+      });
+
+      res.json(updatedContact);
+    } catch (error) {
+      console.error('Failed to collect data:', error);
+      res.status(500).json({ message: "Failed to collect data" });
+    }
+  });
+
+  // Generate recommendations
+  app.post("/api/contacts/:id/recommendations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { model = "gpt-4o" } = req.body;
+      const contact = await storage.getContact(parseInt(req.params.id), req.user!.id);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+
+      const apiKeys = await storage.getApiKeys(req.user!.id);
+      if (!apiKeys?.openaiApiKey) {
+        return res.status(400).json({ message: "OpenAI API key not configured" });
+      }
+
+      const settings = await storage.getUserSettings(req.user!.id);
+      const playbook = settings?.playbook || getDefaultPlaybook();
+
+      const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
+
+      const prompt = `
+Ты - эксперт по B2B продажам. На основе следующей информации создай 3 персонализированные рекомендации продуктов для продажи:
+
+СПРАВОЧНИК ПРОДУКТОВ:
+${playbook}
+
+ИНФОРМАЦИЯ О КОМПАНИИ:
+- Название: ${contact.company}
+- Отрасль: ${contact.collectedData?.industry || 'Не указана'}
+- Выручка: ${contact.collectedData?.revenue || 'Не указана'}
+- Количество сотрудников: ${contact.collectedData?.employees || 'Не указано'}
+- Основные продукты: ${contact.collectedData?.products || 'Не указаны'}
+
+ИНФОРМАЦИЯ О КОНТАКТЕ:
+- Имя: ${contact.name}
+- Должность: ${contact.position || contact.collectedData?.jobTitle || 'Не указана'}
+- Последние публикации: ${contact.collectedData?.socialPosts?.map(post => post.content).join('; ') || 'Нет данных'}
+
+Для каждой рекомендации укажи:
+1. Название продукта/решения
+2. Краткое описание (2-3 предложения)
+3. Почему это подходит именно этому клиенту
+4. Потенциальную выгоду или ROI
+
+Ответь в формате JSON:
+{
+  "recommendations": [
+    {
+      "title": "Название продукта",
+      "description": "Описание решения",
+      "rationale": "Почему подходит клиенту",
+      "benefits": "Потенциальные выгоды"
+    }
+  ]
+}
+`;
+
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: model,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+      });
+
+      const recommendations = JSON.parse(response.choices[0].message.content || '{}');
+
+      // Update contact with recommendations
+      const updatedContact = await storage.createOrUpdateContact({
+        ...contact,
+        recommendations,
+      });
+
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Failed to generate recommendations:', error);
+      res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
+
+// Helper functions
+function extractContactField(contact: AmoCRMContact, fieldType: string): string | undefined {
+  if (!contact.custom_fields_values) return undefined;
+  
+  const field = contact.custom_fields_values.find(field => 
+    field.field_name?.toUpperCase().includes(fieldType)
+  );
+  
+  return field?.values?.[0]?.value;
+}
+
+function getContactStatus(contact: AmoCRMContact): string {
+  // Simple status mapping - could be enhanced based on AmoCRM status fields
+  return "Активный";
+}
+
+async function searchWithBrave(query: string, apiKey: string): Promise<SearchResult | null> {
+  try {
+    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}`, {
+      headers: {
+        'X-Subscription-Token': apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Brave Search API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Parse search results to extract structured data
+    return parseSearchResults(data.web?.results || []);
+  } catch (error) {
+    console.error('Brave Search failed:', error);
+    return null;
+  }
+}
+
+async function searchWithPerplexity(query: string, apiKey: string): Promise<SearchResult | null> {
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'Ты - эксперт по анализу компаний. Извлеки структурированную информацию из поискового запроса и верни в JSON формате.',
+          },
+          {
+            role: 'user',
+            content: query,
+          },
+        ],
+        temperature: 0.2,
+        return_related_questions: false,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (content) {
+      return parsePerplexityResponse(content);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Perplexity Search failed:', error);
+    return null;
+  }
+}
+
+function parseSearchResults(results: any[]): SearchResult {
+  // Simple parsing logic - could be enhanced with more sophisticated extraction
+  const combinedText = results.map(r => r.description || '').join(' ').toLowerCase();
+  
+  return {
+    industry: extractIndustry(combinedText),
+    revenue: extractRevenue(combinedText),
+    employees: extractEmployees(combinedText),
+    products: extractProducts(combinedText),
+    jobTitle: extractJobTitle(combinedText),
+    socialPosts: extractSocialPosts(results),
+  };
+}
+
+function parsePerplexityResponse(content: string): SearchResult {
+  // Parse Perplexity's structured response
+  try {
+    return JSON.parse(content);
+  } catch {
+    // Fallback to text parsing
+    return {
+      industry: extractIndustry(content),
+      revenue: extractRevenue(content),
+      employees: extractEmployees(content),
+      products: extractProducts(content),
+      jobTitle: extractJobTitle(content),
+    };
+  }
+}
+
+function extractIndustry(text: string): string | undefined {
+  const patterns = [
+    /отрасль[:\s]*([^.,\n]+)/i,
+    /сфера[:\s]*([^.,\n]+)/i,
+    /индустрия[:\s]*([^.,\n]+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1].trim();
+  }
+  
+  return undefined;
+}
+
+function extractRevenue(text: string): string | undefined {
+  const patterns = [
+    /выручка[:\s]*([^.,\n]+)/i,
+    /доход[:\s]*([^.,\n]+)/i,
+    /оборот[:\s]*([^.,\n]+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1].trim();
+  }
+  
+  return undefined;
+}
+
+function extractEmployees(text: string): string | undefined {
+  const patterns = [
+    /сотрудник[ов]*[:\s]*([^.,\n]+)/i,
+    /персонал[:\s]*([^.,\n]+)/i,
+    /штат[:\s]*([^.,\n]+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1].trim();
+  }
+  
+  return undefined;
+}
+
+function extractProducts(text: string): string | undefined {
+  const patterns = [
+    /продукт[ыи]*[:\s]*([^.,\n]+)/i,
+    /услуг[аи]*[:\s]*([^.,\n]+)/i,
+    /решени[яе]*[:\s]*([^.,\n]+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1].trim();
+  }
+  
+  return undefined;
+}
+
+function extractJobTitle(text: string): string | undefined {
+  const patterns = [
+    /должность[:\s]*([^.,\n]+)/i,
+    /позиция[:\s]*([^.,\n]+)/i,
+    /директор[:\s]*([^.,\n]*)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1].trim();
+  }
+  
+  return undefined;
+}
+
+function extractSocialPosts(results: any[]): Array<{ platform: string; date: string; content: string }> {
+  // Simple extraction for social media posts
+  return results
+    .filter(r => r.url?.includes('linkedin') || r.url?.includes('facebook') || r.url?.includes('twitter'))
+    .slice(0, 3)
+    .map(r => ({
+      platform: r.url?.includes('linkedin') ? 'LinkedIn' : 'Social Media',
+      date: new Date().toLocaleDateString('ru-RU'),
+      content: r.description || r.title || '',
+    }));
+}
+
+function getDefaultPlaybook(): string {
+  return `
+СПРАВОЧНИК ПРОДУКТОВ И УСЛУГ:
+
+1. Система управления закупками с ИИ-аналитикой
+   - Автоматизация процессов закупок
+   - Оптимизация затрат на 15-20%
+   - Анализ поставщиков и рисков
+   - Интеграция с ERP-системами
+   - Целевая аудитория: Крупные компании, банки, ритейл
+
+2. Аналитическая BI-платформа
+   - Бизнес-аналитика и отчетность
+   - Прогнозирование и планирование
+   - Интеграция данных из разных источников
+   - Дашборды и визуализация
+   - Целевая аудитория: Все отрасли, особенно финансы и ритейл
+
+3. Система управления поставщиками
+   - Оценка и мониторинг поставщиков
+   - Управление рисками и соответствием
+   - Автоматизация тендерных процессов
+   - Интеграция с закупочными системами
+   - Целевая аудитория: Производство, строительство, IT
+
+4. Платформа для управления документооборотом
+   - Электронный документооборот
+   - Цифровые подписи и согласования
+   - Архивирование и поиск документов
+   - Интеграция с корпоративными системами
+   - Целевая аудитория: Все отрасли
+
+5. CRM система для B2B продаж
+   - Управление клиентской базой
+   - Автоматизация продаж
+   - Аналитика эффективности
+   - Интеграция с маркетинговыми инструментами
+   - Целевая аудитория: B2B компании всех размеров
+
+УНИКАЛЬНЫЕ ПРЕИМУЩЕСТВА:
+- Быстрое внедрение (от 2 недель)
+- Высокий ROI (окупаемость 6-18 месяцев)
+- Российская разработка и поддержка
+- Соответствие требованиям безопасности
+- Гибкая настройка под бизнес-процессы
+`;
+}

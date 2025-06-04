@@ -1,0 +1,367 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRoute, Link } from "wouter";
+import Sidebar from "@/components/sidebar";
+import ProgressPanel from "@/components/progress-panel";
+import Recommendations from "@/components/recommendations";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Search, Lightbulb, Building, User, Database } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Contact } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+
+export default function ContactDetail() {
+  const [, params] = useRoute("/contact/:id");
+  const contactId = parseInt(params?.id || "0");
+  const [showProgress, setShowProgress] = useState(false);
+  const { toast } = useToast();
+
+  const { data: contact, isLoading } = useQuery<Contact>({
+    queryKey: ["/api/contacts", contactId],
+    enabled: !!contactId,
+  });
+
+  const collectDataMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/contacts/${contactId}/collect-data`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts", contactId] });
+      setShowProgress(false);
+      toast({
+        title: "Успешно",
+        description: "Данные собраны",
+      });
+    },
+    onError: (error) => {
+      setShowProgress(false);
+      toast({
+        title: "Ошибка",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateRecommendationsMutation = useMutation({
+    mutationFn: async (model: string) => {
+      const response = await apiRequest("POST", `/api/contacts/${contactId}/recommendations`, { model });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts", contactId] });
+      toast({
+        title: "Успешно",
+        description: "Рекомендации сгенерированы",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Ошибка",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCollectData = () => {
+    setShowProgress(true);
+    collectDataMutation.mutate();
+  };
+
+  const handleGenerateRecommendations = (model: string) => {
+    generateRecommendationsMutation.mutate(model);
+  };
+
+  if (isLoading || !contact) {
+    return (
+      <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'активный': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+      case 'новый': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'в процессе': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const hasCollectedData = contact.collectedData && Object.keys(contact.collectedData).length > 0;
+
+  return (
+    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto p-6">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="mb-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Назад к списку
+              </Button>
+            </Link>
+            
+            {/* Contact Header */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+                    <span className="text-white text-2xl font-semibold">
+                      {getInitials(contact.name)}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
+                      {contact.name}
+                    </h1>
+                    <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">
+                      {contact.position || 'Должность не указана'}
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Компания:</span>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {contact.company || 'Не указана'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Email:</span>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {contact.email || 'Не указан'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Телефон:</span>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {contact.phone || 'Не указан'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Статус:</span>
+                        <Badge className={`ml-2 ${getStatusColor(contact.status)}`}>
+                          {contact.status || 'Не указан'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AmoCRM Data */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Database className="w-5 h-5 mr-3 text-primary-500" />
+                Данные из AmoCRM
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Контактная информация
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">AmoCRM ID:</span>
+                      <span className="text-gray-900 dark:text-white">{contact.amoCrmId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Последнее обновление:</span>
+                      <span className="text-gray-900 dark:text-white">
+                        {new Date(contact.lastUpdated).toLocaleDateString('ru-RU')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Дополнительные данные
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    {contact.amoCrmData && typeof contact.amoCrmData === 'object' ? (
+                      Object.entries(contact.amoCrmData as Record<string, any>)
+                        .slice(0, 4)
+                        .map(([key, value]) => (
+                          <div key={key} className="flex justify-between">
+                            <span className="text-gray-500 dark:text-gray-400 capitalize">
+                              {key.replace(/_/g, ' ')}:
+                            </span>
+                            <span className="text-gray-900 dark:text-white truncate max-w-32">
+                              {String(value)}
+                            </span>
+                          </div>
+                        ))
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400">Нет дополнительных данных</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-4 mb-6">
+            <Button 
+              onClick={handleCollectData}
+              disabled={collectDataMutation.isPending}
+              className="flex-1 py-4 text-lg"
+            >
+              <Search className="w-5 h-5 mr-3" />
+              {collectDataMutation.isPending ? 'Собираем данные...' : 'Собрать данные'}
+            </Button>
+            <Button 
+              onClick={() => handleGenerateRecommendations('gpt-4o')}
+              disabled={!hasCollectedData || generateRecommendationsMutation.isPending}
+              variant={hasCollectedData ? "default" : "secondary"}
+              className="flex-1 py-4 text-lg"
+            >
+              <Lightbulb className="w-5 h-5 mr-3" />
+              {generateRecommendationsMutation.isPending ? 'Генерируем...' : 'Рекомендации'}
+              {!hasCollectedData && (
+                <span className="text-sm ml-2">(после сбора данных)</span>
+              )}
+            </Button>
+          </div>
+
+          {/* Progress Panel */}
+          {showProgress && (
+            <ProgressPanel 
+              isVisible={showProgress}
+              onToggle={() => setShowProgress(!showProgress)}
+            />
+          )}
+
+          {/* Results Section */}
+          {hasCollectedData && (
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              {/* Company Insights */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Building className="w-5 h-5 mr-3 text-primary-500" />
+                    Данные о компании
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        ОТРАСЛЬ
+                      </span>
+                      <p className="mt-1 text-gray-900 dark:text-white">
+                        {contact.collectedData?.industry || 'Не найдено'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        ВЫРУЧКА
+                      </span>
+                      <p className="mt-1 text-gray-900 dark:text-white">
+                        {contact.collectedData?.revenue || 'Не найдено'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        КОЛИЧЕСТВО СОТРУДНИКОВ
+                      </span>
+                      <p className="mt-1 text-gray-900 dark:text-white">
+                        {contact.collectedData?.employees || 'Не найдено'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        ОСНОВНЫЕ ПРОДУКТЫ
+                      </span>
+                      <p className="mt-1 text-gray-900 dark:text-white">
+                        {contact.collectedData?.products || 'Не найдено'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Contact Insights */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="w-5 h-5 mr-3 text-accent-400" />
+                    Данные о контакте
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        ДОЛЖНОСТЬ
+                      </span>
+                      <p className="mt-1 text-gray-900 dark:text-white">
+                        {contact.collectedData?.jobTitle || contact.position || 'Не найдено'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        ПОСЛЕДНИЕ ПУБЛИКАЦИИ
+                      </span>
+                      <div className="mt-2 space-y-2">
+                        {contact.collectedData?.socialPosts && contact.collectedData.socialPosts.length > 0 ? (
+                          contact.collectedData.socialPosts.slice(0, 3).map((post, index) => (
+                            <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {post.platform} • {post.date}
+                              </p>
+                              <p className="text-gray-600 dark:text-gray-300 mt-1">
+                                {post.content.length > 100 
+                                  ? `${post.content.substring(0, 100)}...` 
+                                  : post.content
+                                }
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 dark:text-gray-400">Публикации не найдены</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Recommendations */}
+          {contact.recommendations && (
+            <Recommendations 
+              recommendations={contact.recommendations}
+              onRegenerate={handleGenerateRecommendations}
+              isGenerating={generateRecommendationsMutation.isPending}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
