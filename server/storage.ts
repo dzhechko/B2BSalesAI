@@ -167,15 +167,21 @@ export class DatabaseStorage implements IStorage {
     const [contact] = await db
       .select()
       .from(contacts)
-      .where(eq(contacts.id, id) && eq(contacts.userId, userId));
-    return contact || undefined;
+      .where(eq(contacts.id, id));
+    
+    if (contact && contact.userId === userId) {
+      return contact;
+    }
+    return undefined;
   }
 
   async createOrUpdateContact(contact: InsertContact): Promise<Contact> {
-    const [existingContact] = await db
+    const existingContacts = await db
       .select()
       .from(contacts)
-      .where(eq(contacts.amoCrmId, contact.amoCrmId!) && eq(contacts.userId, contact.userId));
+      .where(eq(contacts.amoCrmId, contact.amoCrmId!));
+    
+    const existingContact = existingContacts.find(c => c.userId === contact.userId);
     
     if (existingContact) {
       const [updatedContact] = await db

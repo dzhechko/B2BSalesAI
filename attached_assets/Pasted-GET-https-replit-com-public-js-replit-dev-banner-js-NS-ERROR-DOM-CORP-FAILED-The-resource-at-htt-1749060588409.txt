@@ -1,0 +1,159 @@
+GET
+https://replit.com/public/js/replit-dev-banner.js
+NS_ERROR_DOM_CORP_FAILED
+
+The resource at “https://replit.com/public/js/replit-dev-banner.js” was blocked due to its Cross-Origin-Resource-Policy header (or lack thereof). See https://developer.mozilla.org/docs/Web/HTTP/Cross-Origin_Resource_Policy_(CORP)# b-2-b-sales-ai-dzhechko.replit.app
+Loading failed for the <script> with source “https://replit.com/public/js/replit-dev-banner.js”. b-2-b-sales-ai-dzhechko.replit.app:12:92
+XHRGET
+https://b-2-b-sales-ai-dzhechko.replit.app/api/contacts
+[HTTP/3 400  368ms]
+
+TypeError: S is undefined
+    f https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:278
+    XD https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:278
+    Mp https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    sf https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    mb https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    fb https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    bP https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    hu https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    gf https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Zm https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    hs https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Pn https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    I1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    R1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    batchCalls https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    n https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    r https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    setTimeout handler*s https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    batch https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    nr https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    setData https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    onSuccess https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    f https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    promise callback*b https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    start https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    fetch https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    Oo https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    onSubscribe https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    subscribe https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    Uj https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    R1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    Gu https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Ci https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    kP https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    xs https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Zm https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    hs https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Pn https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    I1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    R1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    e https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    nj https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    rc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    t https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    b https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    t https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    UE https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    WE https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    HE https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    vm https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    m1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Kc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Bp https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Vw https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Kc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    yp https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    aT https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    g1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Qc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    oa https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    oa https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    createRoot https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    <anonymous> https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:278
+index-B-bnd4zb.js:40:161
+Uncaught TypeError: S is undefined
+    f https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:278
+    XD https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:278
+    Mp https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    sf https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    mb https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    fb https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    bP https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    hu https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    gf https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Zm https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    hs https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Pn https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    I1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    R1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    batchCalls https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    n https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    r https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    setTimeout handler*s https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    o https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    batch https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    nr https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    setData https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    onSuccess https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    f https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    promise callback*b https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    start https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    fetch https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    Oo https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    onSubscribe https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    subscribe https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    Uj https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    R1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    Gu https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Ci https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    kP https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    xs https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Zm https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    hs https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Qt https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Pn https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    I1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    R1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:38
+    e https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    nj https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    rc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    t https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    b https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    t https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:48
+    UE https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    WE https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    HE https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    vm https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    m1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Kc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Bp https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    Vw https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Kc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    yp https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    aT https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    g1 https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    Qc https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    oa https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    oa https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:37
+    createRoot https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:40
+    <anonymous> https://b-2-b-sales-ai-dzhechko.replit.app/assets/index-B-bnd4zb.js:278
+index-B-bnd4zb.js:278:4097
+
+​
+
