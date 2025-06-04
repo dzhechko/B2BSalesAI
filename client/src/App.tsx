@@ -17,7 +17,7 @@ function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
-      <ProtectedRoute path="/contact/:id" component={ContactDetail} />
+      <ProtectedRoute path="/contacts/:id" component={ContactDetail} />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/playbook" component={Playbook} />
       <Route path="/auth" component={AuthPage} />
