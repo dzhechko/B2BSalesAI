@@ -379,9 +379,22 @@ export default function ContactDetail() {
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                         ОСНОВНЫЕ ПРОДУКТЫ
                       </span>
-                      <p className="mt-1 text-gray-900 dark:text-white">
-                        {(contact.collectedData as CollectedData)?.products || 'Не найдено'}
-                      </p>
+                      <div className="mt-1 text-gray-900 dark:text-white">
+                        {(() => {
+                          const products = (contact.collectedData as CollectedData)?.products;
+                          if (!products) return 'Не найдено';
+                          if (Array.isArray(products)) {
+                            return (
+                              <ul className="list-disc list-inside space-y-1">
+                                {products.map((product, index) => (
+                                  <li key={index}>{product}</li>
+                                ))}
+                              </ul>
+                            );
+                          }
+                          return products;
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -483,66 +496,7 @@ export default function ContactDetail() {
                           </p>
                         </div>
                         
-                        <div>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Извлеченные данные:
-                          </span>
-                          <div className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded border">
-                            {(() => {
-                              try {
-                                const data = JSON.parse(searchQuery.response);
-                                return (
-                                  <div className="space-y-2">
-                                    {data.industry && (
-                                      <div className="flex">
-                                        <span className="font-medium w-24">Отрасль:</span>
-                                        <span>{data.industry}</span>
-                                      </div>
-                                    )}
-                                    {data.revenue && (
-                                      <div className="flex">
-                                        <span className="font-medium w-24">Выручка:</span>
-                                        <span>{data.revenue}</span>
-                                      </div>
-                                    )}
-                                    {data.employees && (
-                                      <div className="flex">
-                                        <span className="font-medium w-24">Сотрудники:</span>
-                                        <span>{data.employees}</span>
-                                      </div>
-                                    )}
-                                    {data.products && (
-                                      <div className="flex">
-                                        <span className="font-medium w-24">Продукты:</span>
-                                        <span>{data.products}</span>
-                                      </div>
-                                    )}
-                                    {data.jobTitle && (
-                                      <div className="flex">
-                                        <span className="font-medium w-24">Должность:</span>
-                                        <span>{data.jobTitle}</span>
-                                      </div>
-                                    )}
-                                    {data.socialPosts && data.socialPosts.length > 0 && (
-                                      <div>
-                                        <span className="font-medium">Публикации:</span>
-                                        <ul className="mt-1 space-y-1">
-                                          {data.socialPosts.filter((post: any) => post && post.platform && post.content).map((post: any, idx: number) => (
-                                            <li key={idx} className="text-sm pl-4">
-                                              • {post.platform}: {post.content}
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              } catch (e) {
-                                return <span className="text-gray-500">Ошибка парсинга данных</span>;
-                              }
-                            })()}
-                          </div>
-                        </div>
+
                         
                         {searchQuery.fullResponse && (
                           <div>
