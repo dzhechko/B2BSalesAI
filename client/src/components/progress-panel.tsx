@@ -15,21 +15,21 @@ export default function ProgressPanel({ isVisible, onToggle }: ProgressPanelProp
   const progressSteps = [
     {
       title: "Поиск информации о компании",
-      query: "запрос вида \"Сбербанк отрасль выручка сотрудники основные продукты 2024\"",
+      query: "запрос вида \"yandex отрасль выручка сотрудники основные продукты 2025\"",
       status: "completed",
       progress: 100,
       result: "✓ Найдены: отрасль, выручка, количество сотрудников, основные продукты"
     },
     {
-      title: "Поиск",
-      query: "запрос вида \"Иван Петров Сбербанк LinkedIn должность\"",
+      title: "Поиск контактной информации",
+      query: "запрос вида \"Дмитрий Жечков должность в yandex 3 последние публикации в соц сетях\"",
       status: "running",
       progress: 60,
       result: null
     },
     {
-      title: "Анализ социальных сетей",
-      query: "запрос вида \"Иван Петров Сбербанк публикации LinkedIn\"",
+      title: "Анализ данных с помощью ИИ",
+      query: "извлечение должности и публикаций из результатов поиска",
       status: "pending",
       progress: 0,
       result: null
