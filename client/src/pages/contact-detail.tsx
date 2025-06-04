@@ -527,7 +527,7 @@ export default function ContactDetail() {
                                       <div>
                                         <span className="font-medium">Публикации:</span>
                                         <ul className="mt-1 space-y-1">
-                                          {data.socialPosts.map((post: any, idx: number) => (
+                                          {data.socialPosts.filter((post: any) => post && post.platform && post.content).map((post: any, idx: number) => (
                                             <li key={idx} className="text-sm pl-4">
                                               • {post.platform}: {post.content}
                                             </li>
