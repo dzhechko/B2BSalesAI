@@ -10,6 +10,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Search, Lightbulb, Building, User, Database } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Contact } from "@shared/schema";
+
+interface CollectedData {
+  industry?: string;
+  revenue?: string;
+  employees?: string;
+  products?: string;
+  jobTitle?: string;
+  socialPosts?: Array<{
+    platform: string;
+    date: string;
+    content: string;
+  }>;
+}
 import { useToast } from "@/hooks/use-toast";
 
 export default function ContactDetail() {
@@ -19,7 +32,7 @@ export default function ContactDetail() {
   const { toast } = useToast();
 
   const { data: contact, isLoading } = useQuery<Contact>({
-    queryKey: ["/api/contacts", contactId],
+    queryKey: [`/api/contacts/${contactId}`],
     enabled: !!contactId,
   });
 
@@ -29,7 +42,7 @@ export default function ContactDetail() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contacts", contactId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/contacts/${contactId}`] });
       setShowProgress(false);
       toast({
         title: "Успешно",
@@ -273,7 +286,7 @@ export default function ContactDetail() {
                         ОТРАСЛЬ
                       </span>
                       <p className="mt-1 text-gray-900 dark:text-white">
-                        {contact.collectedData?.industry || 'Не найдено'}
+                        {(contact.collectedData as CollectedData)?.industry || 'Не найдено'}
                       </p>
                     </div>
                     <div>
@@ -281,7 +294,7 @@ export default function ContactDetail() {
                         ВЫРУЧКА
                       </span>
                       <p className="mt-1 text-gray-900 dark:text-white">
-                        {contact.collectedData?.revenue || 'Не найдено'}
+                        {(contact.collectedData as CollectedData)?.revenue || 'Не найдено'}
                       </p>
                     </div>
                     <div>
