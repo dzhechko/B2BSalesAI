@@ -928,20 +928,5 @@ function getDefaultPlaybook(): string {
 }
 
   const httpServer = createServer(app);
-  
-  // Setup WebSocket server for progress tracking
-  const wss = new WebSocketServer({ server: httpServer });
-  
-  wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
-    
-    ws.on('close', () => {
-      console.log('WebSocket client disconnected');
-    });
-  });
-  
-  // Store WebSocket server reference for broadcasting progress updates
-  (app as any).wss = wss;
-
   return httpServer;
 }
