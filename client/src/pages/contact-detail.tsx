@@ -35,7 +35,7 @@ interface CollectedData {
 import { useToast } from "@/hooks/use-toast";
 
 export default function ContactDetail() {
-  const [, params] = useRoute("/contact/:id");
+  const [, params] = useRoute("/contacts/:id");
   const contactId = parseInt(params?.id || "0");
   const [showProgress, setShowProgress] = useState(false);
   const { toast } = useToast();
