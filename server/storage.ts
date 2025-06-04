@@ -46,11 +46,11 @@ export interface IStorage {
   getContact(id: number, userId: number): Promise<Contact | undefined>;
   createOrUpdateContact(contact: InsertContact): Promise<Contact>;
   
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 

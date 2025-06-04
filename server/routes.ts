@@ -225,8 +225,17 @@ export function registerRoutes(app: Express): Server {
 
       // Update contact with collected data
       const updatedContact = await storage.createOrUpdateContact({
-        ...contact,
-        collectedData,
+        userId: contact.userId,
+        amoCrmId: contact.amoCrmId,
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        position: contact.position,
+        company: contact.company,
+        status: contact.status,
+        amoCrmData: contact.amoCrmData as any,
+        collectedData: collectedData as any,
+        recommendations: contact.recommendations as any,
       });
 
       res.json(updatedContact);
@@ -306,8 +315,17 @@ ${playbook}
 
       // Update contact with recommendations
       const updatedContact = await storage.createOrUpdateContact({
-        ...contact,
-        recommendations,
+        userId: contact.userId,
+        amoCrmId: contact.amoCrmId,
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        position: contact.position,
+        company: contact.company,
+        status: contact.status,
+        amoCrmData: contact.amoCrmData as any,
+        collectedData: contact.collectedData as any,
+        recommendations: recommendations as any,
       });
 
       res.json(recommendations);
