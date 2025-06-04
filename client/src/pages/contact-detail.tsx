@@ -66,7 +66,7 @@ export default function ContactDetail() {
     },
     onSuccess: (data) => {
       // Update contact in cache with new recommendations
-      queryClient.setQueryData(["/api/contacts", contactId], (oldData: any) => {
+      queryClient.setQueryData([`/api/contacts/${contactId}`], (oldData: any) => {
         if (oldData) {
           return {
             ...oldData,
@@ -77,7 +77,7 @@ export default function ContactDetail() {
       });
       
       // Also invalidate to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/contacts", contactId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/contacts/${contactId}`] });
       
       toast({
         title: "Успешно",
