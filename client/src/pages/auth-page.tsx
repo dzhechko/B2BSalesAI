@@ -213,32 +213,32 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero section */}
-      <div className="flex-1 bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center p-8">
+      <div className="flex-1 bg-gradient-to-br from-blue-600 to-blue-800 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center p-8">
         <div className="text-center text-white max-w-md">
-          <h2 className="text-3xl font-bold mb-6">
+          <h2 className="text-3xl font-bold mb-6 text-white">
             Увеличьте продажи с ИИ
           </h2>
           <div className="space-y-4 text-lg">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold">1</span>
+              <div className="w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
+                <span className="text-sm font-bold text-blue-800">1</span>
               </div>
-              <span>Интеграция с AmoCRM</span>
+              <span className="text-white">Интеграция с AmoCRM</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold">2</span>
+              <div className="w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
+                <span className="text-sm font-bold text-blue-800">2</span>
               </div>
-              <span>Автоматический сбор данных</span>
+              <span className="text-white">Автоматический сбор данных</span>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold">3</span>
+              <div className="w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
+                <span className="text-sm font-bold text-blue-800">3</span>
               </div>
-              <span>ИИ-рекомендации для продаж</span>
+              <span className="text-white">ИИ-рекомендации для продаж</span>
             </div>
           </div>
-          <p className="mt-8 text-primary-100">
+          <p className="mt-8 text-blue-100">
             Подготовьтесь к встречам быстрее и продавайте эффективнее
           </p>
         </div>
