@@ -39,6 +39,7 @@ export default function ContactDetail() {
   const contactId = parseInt(params?.id || "0");
   const [showProgress, setShowProgress] = useState(false);
   const [expandedFullResponses, setExpandedFullResponses] = useState<{[key: number]: boolean}>({});
+  const [currentStage, setCurrentStage] = useState<'company' | 'contact' | 'analysis' | null>(null);
   const { toast } = useToast();
 
   const toggleFullResponse = (index: number) => {
@@ -55,18 +56,23 @@ export default function ContactDetail() {
 
   const collectDataMutation = useMutation({
     mutationFn: async () => {
+      setCurrentStage('company');
+      setShowProgress(true);
+      
       const response = await apiRequest("POST", `/api/contacts/${contactId}/collect-data`);
       return response.json();
     },
     onSuccess: () => {
+      setCurrentStage(null);
       queryClient.invalidateQueries({ queryKey: [`/api/contacts/${contactId}`] });
-      setShowProgress(false);
+      setTimeout(() => setShowProgress(false), 2000);
       toast({
         title: "Успешно",
         description: "Данные собраны",
       });
     },
     onError: (error) => {
+      setCurrentStage(null);
       setShowProgress(false);
       toast({
         title: "Ошибка",
@@ -333,6 +339,7 @@ export default function ContactDetail() {
             <ProgressPanel 
               isVisible={showProgress}
               onToggle={() => setShowProgress(!showProgress)}
+              currentStage={currentStage}
             />
           )}
 

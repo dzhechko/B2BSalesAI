@@ -7,32 +7,48 @@ import { ChevronUp, ChevronDown, Settings, Check, Loader2 } from "lucide-react";
 interface ProgressPanelProps {
   isVisible: boolean;
   onToggle: () => void;
+  currentStage?: 'company' | 'contact' | 'analysis' | null;
 }
 
-export default function ProgressPanel({ isVisible, onToggle }: ProgressPanelProps) {
+export default function ProgressPanel({ isVisible, onToggle, currentStage }: ProgressPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+
+  const getStageStatus = (stageKey: string) => {
+    if (!currentStage) return "pending";
+    
+    const stageOrder = ["company", "contact", "analysis"];
+    const currentIndex = stageOrder.indexOf(currentStage);
+    const stageIndex = stageOrder.indexOf(stageKey);
+    
+    if (stageIndex < currentIndex) return "completed";
+    if (stageIndex === currentIndex) return "running";
+    return "pending";
+  };
 
   const progressSteps = [
     {
+      key: "company",
       title: "Поиск информации о компании",
       query: "запрос вида \"<Компания> отрасль выручка сотрудники основные продукты 2025\"",
-      status: "completed",
-      progress: 100,
-      result: "✓ Найдены: отрасль, выручка, количество сотрудников, основные продукты"
+      status: getStageStatus("company"),
+      progress: getStageStatus("company") === "running" ? 60 : (getStageStatus("company") === "completed" ? 100 : 0),
+      result: getStageStatus("company") === "completed" ? "✓ Найдены: отрасль, выручка, количество сотрудников, основные продукты" : null
     },
     {
+      key: "contact",
       title: "Поиск контактной информации",
       query: "запрос вида \"<ФИО> должность в <Компания> 3 последние публикации в соц сетях\"",
-      status: "running",
-      progress: 60,
-      result: null
+      status: getStageStatus("contact"),
+      progress: getStageStatus("contact") === "running" ? 60 : (getStageStatus("contact") === "completed" ? 100 : 0),
+      result: getStageStatus("contact") === "completed" ? "✓ Найдена должность и социальные публикации" : null
     },
     {
+      key: "analysis",
       title: "Анализ данных с помощью ИИ",
       query: "извлечение должности и публикаций из результатов поиска",
-      status: "pending",
-      progress: 0,
-      result: null
+      status: getStageStatus("analysis"),
+      progress: getStageStatus("analysis") === "running" ? 60 : (getStageStatus("analysis") === "completed" ? 100 : 0),
+      result: getStageStatus("analysis") === "completed" ? "✓ Данные проанализированы и структурированы" : null
     }
   ];
 
