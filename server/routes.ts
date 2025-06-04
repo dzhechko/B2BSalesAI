@@ -221,10 +221,15 @@ export function registerRoutes(app: Express): Server {
       }
 
       const apiKeys = await storage.getApiKeys(req.user!.id);
-      const userSettings = await storage.getUserSettings(req.user!.id);
       
-      // Get enabled search systems from user settings
-      const enabledSystems = (userSettings?.searchSystems as string[]) || ["brave", "perplexity"];
+      // Get enabled search systems (fallback to both if field doesn't exist)
+      let enabledSystems = ["brave", "perplexity"];
+      try {
+        const userSettings = await storage.getUserSettings(req.user!.id);
+        enabledSystems = (userSettings?.searchSystems as string[]) || ["brave", "perplexity"];
+      } catch (error) {
+        console.log('Using default search systems (field not exists):', enabledSystems);
+      }
       
       // Check that at least one enabled system has API credentials
       const hasBraveEnabled = enabledSystems.includes("brave") && apiKeys?.braveSearchApiKey;
