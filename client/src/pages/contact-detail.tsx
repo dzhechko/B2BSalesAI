@@ -190,38 +190,38 @@ export default function ContactDetail() {
                         </Badge>
                       </div>
                       {/* LinkedIn Field */}
-                      {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                      {(contact.amoCrmData as any)?.custom_fields_values?.find((field: any) => 
                         field.field_name?.toLowerCase().includes('linkedin'))?.values?.[0]?.value && (
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">LinkedIn:</span>
                           <p className="font-medium text-blue-600 dark:text-blue-400">
                             <a 
-                              href={contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                              href={(contact.amoCrmData as any)?.custom_fields_values?.find((field: any) => 
                                 field.field_name?.toLowerCase().includes('linkedin'))?.values?.[0]?.value}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="hover:underline"
                             >
-                              {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                              {(contact.amoCrmData as any)?.custom_fields_values?.find((field: any) => 
                                 field.field_name?.toLowerCase().includes('linkedin'))?.values?.[0]?.value}
                             </a>
                           </p>
                         </div>
                       )}
                       {/* VK Field */}
-                      {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                      {(contact.amoCrmData as any)?.custom_fields_values?.find((field: any) => 
                         field.field_name?.toLowerCase().includes('вк'))?.values?.[0]?.value && (
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">ВКонтакте:</span>
                           <p className="font-medium text-blue-600 dark:text-blue-400">
                             <a 
-                              href={contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                              href={(contact.amoCrmData as any)?.custom_fields_values?.find((field: any) => 
                                 field.field_name?.toLowerCase().includes('вк'))?.values?.[0]?.value}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="hover:underline"
                             >
-                              {contact.amoCrmData?.custom_fields_values?.find((field: any) => 
+                              {(contact.amoCrmData as any)?.custom_fields_values?.find((field: any) => 
                                 field.field_name?.toLowerCase().includes('вк'))?.values?.[0]?.value}
                             </a>
                           </p>
@@ -267,22 +267,22 @@ export default function ContactDetail() {
                     Дополнительные данные
                   </h3>
                   <div className="space-y-3 text-sm">
-                    {contact.amoCrmData && typeof contact.amoCrmData === 'object' ? (
-                      Object.entries(contact.amoCrmData as Record<string, any>)
-                        .slice(0, 4)
-                        .map(([key, value]) => (
-                          <div key={key} className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400 capitalize">
-                              {key.replace(/_/g, ' ')}:
-                            </span>
-                            <span className="text-gray-900 dark:text-white truncate max-w-32">
-                              {String(value)}
-                            </span>
-                          </div>
-                        ))
-                    ) : (
-                      <p className="text-gray-500 dark:text-gray-400">Нет дополнительных данных</p>
-                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Id:</span>
+                      <span className="text-gray-900 dark:text-white">{(contact.amoCrmData as any)?.id || 'Не найдено'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                      <span className="text-gray-900 dark:text-white">{(contact.amoCrmData as any)?.name || 'Не найдено'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Links:</span>
+                      <span className="text-gray-900 dark:text-white">{(contact.amoCrmData as any)?._links ? 'Есть' : 'Нет'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Group Id:</span>
+                      <span className="text-gray-900 dark:text-white">{(contact.amoCrmData as any)?.group_id || 'Не найдено'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
