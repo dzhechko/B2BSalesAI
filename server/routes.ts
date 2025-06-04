@@ -359,7 +359,7 @@ ${contactSearchResults.join('\n\n')}
               temperature: 0.3,
             });
             
-            collectedData.contactSummary = contactSummaryResponse.choices[0].message.content;
+            collectedData.contactSummary = contactSummaryResponse.choices[0].message.content || undefined;
           } catch (error) {
             console.error('Failed to generate contact summary:', error);
           }
