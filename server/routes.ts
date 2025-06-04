@@ -41,7 +41,7 @@ export function registerRoutes(app: Express): Server {
       const keys = await storage.getApiKeys(req.user!.id);
       // Don't send actual key values, just indicate if they exist
       res.json({
-        hasAmoCrmKey: !!(keys?.amoCrmApiKey),
+        hasAmoCrmToken: !!(keys?.amoCrmApiKey),
         hasOpenAiKey: !!(keys?.openaiApiKey),
         hasBraveSearchKey: !!(keys?.braveSearchApiKey),
         hasPerplexityKey: !!(keys?.perplexityApiKey),
@@ -98,14 +98,14 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const apiKeys = await storage.getApiKeys(req.user!.id);
-      if (!apiKeys?.amoCrmApiKey || !apiKeys?.amoCrmSubdomain) {
+      if (!apiKeys?.amoCrmAccessToken || !apiKeys?.amoCrmSubdomain) {
         return res.status(400).json({ message: "AmoCRM credentials not configured" });
       }
 
       // Fetch contacts from AmoCRM
       const amoCrmResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts`, {
         headers: {
-          'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
+          'Authorization': `Bearer ${apiKeys.amoCrmAccessToken}`,
           'Content-Type': 'application/json',
         },
       });
