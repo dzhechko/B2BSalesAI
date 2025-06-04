@@ -416,6 +416,7 @@ ${companySearchResults.join('\n\n')}
               service: 'brave',
               query: contactQuery,
               response: JSON.stringify(braveContactResult),
+              fullResponse: braveContactResult.fullResponse,
               timestamp: new Date().toISOString()
             });
           }
@@ -433,6 +434,7 @@ ${companySearchResults.join('\n\n')}
               service: 'perplexity',
               query: contactQuery,
               response: JSON.stringify(perplexityContactResult),
+              fullResponse: perplexityContactResult.fullResponse,
               timestamp: new Date().toISOString()
             });
           }
