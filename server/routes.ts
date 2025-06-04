@@ -8,12 +8,29 @@ import OpenAI from "openai";
 interface AmoCRMContact {
   id: number;
   name: string;
+  first_name?: string;
+  last_name?: string;
   custom_fields_values?: Array<{
+    field_id: number;
     field_name: string;
-    values: Array<{ value: string }>;
+    field_code?: string;
+    field_type: string;
+    values: Array<{ 
+      value: string;
+      enum_id?: number;
+      enum_code?: string;
+    }>;
   }>;
   company?: {
     name: string;
+  };
+  _embedded?: {
+    companies?: Array<{
+      id: number;
+      name?: string;
+      _links?: any;
+    }>;
+    tags?: Array<any>;
   };
 }
 
@@ -102,8 +119,8 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "AmoCRM credentials not configured" });
       }
 
-      // Fetch contacts from AmoCRM
-      const amoCrmResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts`, {
+      // Fetch contacts from AmoCRM with companies embedded
+      const amoCrmResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts?with=companies`, {
         headers: {
           'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
           'Content-Type': 'application/json',
@@ -120,6 +137,32 @@ export function registerRoutes(app: Express): Server {
       // Store/update contacts in our database
       const processedContacts = [];
       for (const contact of contacts) {
+        // Extract company name from embedded companies or fetch separately
+        let companyName = '';
+        if (contact._embedded?.companies?.[0]) {
+          const embeddedCompany = contact._embedded.companies[0];
+          companyName = embeddedCompany.name || '';
+          
+          // If no name in embedded data, fetch full company details
+          if (!companyName && embeddedCompany.id) {
+            try {
+              const companyResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/companies/${embeddedCompany.id}`, {
+                headers: {
+                  'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              if (companyResponse.ok) {
+                const companyData = await companyResponse.json();
+                companyName = companyData.name || '';
+                console.log(`Fetched company name: ${companyName} for contact ${contact.name}`);
+              }
+            } catch (error) {
+              console.error(`Failed to fetch company ${embeddedCompany.id}:`, error);
+            }
+          }
+        }
+
         const processedContact = await storage.createOrUpdateContact({
           userId: req.user!.id,
           amoCrmId: contact.id.toString(),
@@ -127,7 +170,7 @@ export function registerRoutes(app: Express): Server {
           email: extractContactField(contact, 'EMAIL'),
           phone: extractContactField(contact, 'PHONE'),
           position: extractContactField(contact, 'POSITION'),
-          company: contact.company?.name || extractContactField(contact, 'COMPANY'),
+          company: companyName || extractContactField(contact, 'COMPANY'),
           status: getContactStatus(contact),
           amoCrmData: contact,
           collectedData: null,
