@@ -35,7 +35,7 @@ export default function ContactCard({ contact }: ContactCardProps) {
   };
 
   return (
-    <Link href={`/contact/${contact.id}`}>
+    <Link href={`/contacts/${contact.id}`}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">
