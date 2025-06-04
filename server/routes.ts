@@ -379,8 +379,21 @@ ${playbook}
 function extractContactField(contact: AmoCRMContact, fieldType: string): string | undefined {
   if (!contact.custom_fields_values) return undefined;
   
+  // Map field types to field codes and names
+  const fieldMapping: Record<string, string[]> = {
+    'PHONE': ['PHONE', 'Телефон'],
+    'EMAIL': ['EMAIL', 'Email'],
+    'POSITION': ['POSITION', 'Должность'],
+    'COMPANY': ['COMPANY', 'Компания'],
+  };
+  
+  const searchTerms = fieldMapping[fieldType] || [fieldType];
+  
   const field = contact.custom_fields_values.find(field => 
-    field.field_name?.toUpperCase().includes(fieldType)
+    searchTerms.some(term => 
+      field.field_code === term || 
+      field.field_name?.includes(term)
+    )
   );
   
   return field?.values?.[0]?.value;
