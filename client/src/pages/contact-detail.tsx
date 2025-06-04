@@ -28,6 +28,7 @@ interface CollectedData {
     service: 'brave' | 'perplexity';
     query: string;
     response: string;
+    fullResponse?: string;
     timestamp: string;
   }>;
 }
@@ -546,7 +547,7 @@ export default function ContactDetail() {
                         {searchQuery.fullResponse && (
                           <div>
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Полный ответ от API:
+                              Полный ответ от поисковой системы:
                             </span>
                             <div className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded border max-h-60 overflow-y-auto">
                               <pre className="whitespace-pre-wrap font-mono text-xs">
