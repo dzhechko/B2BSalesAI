@@ -304,6 +304,51 @@ export function registerRoutes(app: Express): Server {
           }
         }
 
+        // Use GPT-4o to extract structured company data from search results
+        if (apiKeys.openaiApiKey && companySearchResults.length > 0) {
+          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
+          const dataExtractionPrompt = `
+Извлеки структурированную информацию о компании "${companyName}" из результатов поиска:
+
+${companySearchResults.join('\n\n')}
+
+Верни ответ строго в JSON формате:
+{
+  "industry": "точная отрасль деятельности",
+  "revenue": "выручка или доходы (с цифрами и валютой)",
+  "employees": "количество сотрудников (только число)",
+  "products": "основные продукты и услуги"
+}
+
+Требования:
+- Если информации нет, ставь null
+- Для выручки указывай конкретные суммы с валютой
+- Для сотрудников только числовое значение
+- Для отрасли используй стандартные названия (банковский сектор, IT, промышленность и т.д.)
+- Для продуктов кратко перечисли основные направления`;
+
+          try {
+            const extractionResponse = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [{ role: "user", content: dataExtractionPrompt }],
+              temperature: 0.1,
+              response_format: { type: "json_object" },
+            });
+            
+            const extractedData = JSON.parse(extractionResponse.choices[0].message.content || '{}');
+            console.log('GPT-4o extracted company data:', extractedData);
+            
+            // Override parsed data with LLM-extracted data
+            collectedData.industry = extractedData.industry || collectedData.industry;
+            collectedData.revenue = extractedData.revenue || collectedData.revenue;
+            collectedData.employees = extractedData.employees || collectedData.employees;
+            collectedData.products = extractedData.products || collectedData.products;
+            
+          } catch (error) {
+            console.error('Failed to extract company data with GPT-4o:', error);
+          }
+        }
+
         // Generate company summary using GPT-4o
         if (apiKeys.openaiApiKey && companySearchResults.length > 0) {
           const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
@@ -377,15 +422,61 @@ ${companySearchResults.join('\n\n')}
           }
         }
 
+        // Use GPT-4o to extract structured contact data from search results
+        if (apiKeys.openaiApiKey && contactSearchResults.length > 0) {
+          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
+          const contactDataExtractionPrompt = `
+Извлеки структурированную информацию о контакте "${contact.name}" из компании "${companyName}" из результатов поиска:
+
+${contactSearchResults.join('\n\n')}
+
+Верни ответ строго в JSON формате:
+{
+  "jobTitle": "точная должность контакта",
+  "socialPosts": [
+    {
+      "platform": "название платформы",
+      "date": "дата публикации",
+      "content": "содержание поста"
+    }
+  ]
+}
+
+Требования:
+- Если информации нет, ставь null
+- Для должности используй точное название позиции
+- Для социальных постов найди максимум 3 последние публикации
+- Даты в формате DD.MM.YYYY`;
+
+          try {
+            const contactExtractionResponse = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [{ role: "user", content: contactDataExtractionPrompt }],
+              temperature: 0.1,
+              response_format: { type: "json_object" },
+            });
+            
+            const extractedContactData = JSON.parse(contactExtractionResponse.choices[0].message.content || '{}');
+            console.log('GPT-4o extracted contact data:', extractedContactData);
+            
+            // Override parsed data with LLM-extracted data
+            collectedData.jobTitle = extractedContactData.jobTitle || collectedData.jobTitle;
+            collectedData.socialPosts = extractedContactData.socialPosts || collectedData.socialPosts;
+            
+          } catch (error) {
+            console.error('Failed to extract contact data with GPT-4o:', error);
+          }
+        }
+
         // Generate contact summary using GPT-4o
         if (apiKeys.openaiApiKey && contactSearchResults.length > 0) {
           const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
           const contactPrompt = `
-Создай краткое саммари данных о контакте ${contact.name} из компании ${companyName} на основе результатов поиска:
+Создай краткое резюме данных о контакте ${contact.name} из компании ${companyName} на основе результатов поиска:
 
 ${contactSearchResults.join('\n\n')}
 
-Саммари должно включать:
+Резюме должно включать:
 - Текущую должность
 - Профессиональную активность
 - Ключевые темы публикаций
