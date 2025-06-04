@@ -329,7 +329,7 @@ ${companySearchResults.join('\n\n')}
 
           try {
             const extractionResponse = await openai.chat.completions.create({
-              model: "gpt-4o",
+              model: "gpt-4o-mini",
               messages: [{ role: "user", content: dataExtractionPrompt }],
               temperature: 0.1,
               response_format: { type: "json_object" },
@@ -450,7 +450,7 @@ ${contactSearchResults.join('\n\n')}
 
           try {
             const contactExtractionResponse = await openai.chat.completions.create({
-              model: "gpt-4o",
+              model: "gpt-4o-mini",
               messages: [{ role: "user", content: contactDataExtractionPrompt }],
               temperature: 0.1,
               response_format: { type: "json_object" },
