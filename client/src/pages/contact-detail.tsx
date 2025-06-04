@@ -7,7 +7,7 @@ import Recommendations from "@/components/recommendations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Search, Lightbulb, Building, User, Database, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Search, Lightbulb, Building, User, Database } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Contact } from "@shared/schema";
 
@@ -28,7 +28,6 @@ interface CollectedData {
     service: 'brave' | 'perplexity';
     query: string;
     response: string;
-    fullResponse?: string;
     timestamp: string;
   }>;
 }
@@ -38,16 +37,7 @@ export default function ContactDetail() {
   const [, params] = useRoute("/contact/:id");
   const contactId = parseInt(params?.id || "0");
   const [showProgress, setShowProgress] = useState(false);
-  const [expandedFullResponses, setExpandedFullResponses] = useState<{[key: number]: boolean}>({});
-  const [currentStage, setCurrentStage] = useState<'company' | 'contact' | 'analysis' | null>(null);
   const { toast } = useToast();
-
-  const toggleFullResponse = (index: number) => {
-    setExpandedFullResponses(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
 
   const { data: contact, isLoading } = useQuery<Contact>({
     queryKey: [`/api/contacts/${contactId}`],
@@ -56,23 +46,18 @@ export default function ContactDetail() {
 
   const collectDataMutation = useMutation({
     mutationFn: async () => {
-      setCurrentStage('company');
-      setShowProgress(true);
-      
       const response = await apiRequest("POST", `/api/contacts/${contactId}/collect-data`);
       return response.json();
     },
     onSuccess: () => {
-      setCurrentStage(null);
       queryClient.invalidateQueries({ queryKey: [`/api/contacts/${contactId}`] });
-      setTimeout(() => setShowProgress(false), 2000);
+      setShowProgress(false);
       toast({
         title: "Успешно",
         description: "Данные собраны",
       });
     },
     onError: (error) => {
-      setCurrentStage(null);
       setShowProgress(false);
       toast({
         title: "Ошибка",
@@ -339,7 +324,6 @@ export default function ContactDetail() {
             <ProgressPanel 
               isVisible={showProgress}
               onToggle={() => setShowProgress(!showProgress)}
-              currentStage={currentStage}
             />
           )}
 
@@ -506,12 +490,6 @@ export default function ContactDetail() {
                             {(() => {
                               try {
                                 const data = JSON.parse(searchQuery.response);
-                                const hasAnyData = data.industry || data.revenue || data.employees || data.products || data.jobTitle || (data.socialPosts && data.socialPosts.length > 0);
-                                
-                                if (!hasAnyData) {
-                                  return <span className="text-gray-500">Данные не найдены</span>;
-                                }
-                                
                                 return (
                                   <div className="space-y-2">
                                     {data.industry && (
@@ -535,7 +513,7 @@ export default function ContactDetail() {
                                     {data.products && (
                                       <div className="flex">
                                         <span className="font-medium w-24">Продукты:</span>
-                                        <span>{Array.isArray(data.products) ? data.products.join(', ') : data.products}</span>
+                                        <span>{data.products}</span>
                                       </div>
                                     )}
                                     {data.jobTitle && (
@@ -559,7 +537,7 @@ export default function ContactDetail() {
                                   </div>
                                 );
                               } catch (e) {
-                                return <span className="text-gray-500">Ошибка парсинга данных: {String(e)}</span>;
+                                return <span className="text-gray-500">Ошибка парсинга данных</span>;
                               }
                             })()}
                           </div>
@@ -567,24 +545,14 @@ export default function ContactDetail() {
                         
                         {searchQuery.fullResponse && (
                           <div>
-                            <button
-                              onClick={() => toggleFullResponse(index)}
-                              className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                              <span>Полный ответ от API</span>
-                              {expandedFullResponses[index] ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                            {expandedFullResponses[index] && (
-                              <div className="mt-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded border max-h-60 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap font-mono text-xs">
-                                  {JSON.stringify(JSON.parse(searchQuery.fullResponse), null, 2)}
-                                </pre>
-                              </div>
-                            )}
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Полный ответ от API:
+                            </span>
+                            <div className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded border max-h-60 overflow-y-auto">
+                              <pre className="whitespace-pre-wrap font-mono text-xs">
+                                {JSON.stringify(JSON.parse(searchQuery.fullResponse), null, 2)}
+                              </pre>
+                            </div>
                           </div>
                         )}
                       </div>
