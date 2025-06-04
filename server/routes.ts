@@ -47,10 +47,12 @@ interface SearchResult {
   }>;
   companySummary?: string;
   contactSummary?: string;
+  fullResponse?: string;
   searchQueries?: Array<{
     service: 'brave' | 'perplexity';
     query: string;
     response: string;
+    fullResponse?: string;
     timestamp: string;
   }>;
 }
@@ -291,6 +293,7 @@ export function registerRoutes(app: Express): Server {
               service: 'brave',
               query: companyQuery,
               response: JSON.stringify(braveResult),
+              fullResponse: braveResult.fullResponse,
               timestamp: new Date().toISOString()
             });
           }
@@ -312,6 +315,7 @@ export function registerRoutes(app: Express): Server {
               service: 'perplexity',
               query: companyQuery,
               response: JSON.stringify(perplexityResult),
+              fullResponse: perplexityResult.fullResponse,
               timestamp: new Date().toISOString()
             });
           }
@@ -678,7 +682,10 @@ async function searchWithBrave(query: string, apiKey: string): Promise<SearchRes
     const data = await response.json();
     
     // Parse search results to extract structured data
-    return parseSearchResults(data.web?.results || []);
+    const result = parseSearchResults(data.web?.results || []);
+    result.fullResponse = JSON.stringify(data, null, 2);
+    
+    return result;
   } catch (error) {
     console.error('Brave Search failed:', error);
     return null;
@@ -718,7 +725,9 @@ async function searchWithPerplexity(query: string, apiKey: string): Promise<Sear
     const content = data.choices?.[0]?.message?.content;
     
     if (content) {
-      return parsePerplexityResponse(content);
+      const result = parsePerplexityResponse(content);
+      result.fullResponse = JSON.stringify(data, null, 2);
+      return result;
     }
     
     return null;
