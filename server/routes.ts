@@ -221,8 +221,17 @@ export function registerRoutes(app: Express): Server {
       }
 
       const apiKeys = await storage.getApiKeys(req.user!.id);
-      if (!apiKeys?.braveSearchApiKey && !apiKeys?.perplexityApiKey) {
-        return res.status(400).json({ message: "Search API credentials not configured" });
+      const userSettings = await storage.getUserSettings(req.user!.id);
+      
+      // Get enabled search systems from user settings
+      const enabledSystems = (userSettings?.searchSystems as string[]) || ["brave", "perplexity"];
+      
+      // Check that at least one enabled system has API credentials
+      const hasBraveEnabled = enabledSystems.includes("brave") && apiKeys?.braveSearchApiKey;
+      const hasPerplexityEnabled = enabledSystems.includes("perplexity") && apiKeys?.perplexityApiKey;
+      
+      if (!hasBraveEnabled && !hasPerplexityEnabled) {
+        return res.status(400).json({ message: "No search systems configured or enabled in settings" });
       }
 
       const collectedData: SearchResult = {
@@ -261,9 +270,9 @@ export function registerRoutes(app: Express): Server {
         console.log(`Starting data collection for company: ${companyName}`);
         console.log(`Search query: ${companyQuery}`);
         
-        if (apiKeys.braveSearchApiKey) {
+        if (hasBraveEnabled) {
           console.log('Using Brave Search API');
-          const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey);
+          const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey!);
           console.log('Brave Search result:', braveResult);
           if (braveResult) {
             collectedData.industry = braveResult.industry;
@@ -282,10 +291,9 @@ export function registerRoutes(app: Express): Server {
           }
         }
 
-        // Always use Perplexity after Brave Search
-        if (apiKeys.perplexityApiKey) {
+        if (hasPerplexityEnabled) {
           console.log('Using Perplexity API');
-          const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey);
+          const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey!);
           console.log('Perplexity Search result:', perplexityResult);
           if (perplexityResult) {
             collectedData.industry = collectedData.industry || perplexityResult.industry;
@@ -387,8 +395,8 @@ ${companySearchResults.join('\n\n')}
         const contactQuery = `${contact.name} должность в ${companyName} 3 последние публикации в соц сетях`;
         console.log(`Starting contact search: ${contactQuery}`);
         
-        if (apiKeys.braveSearchApiKey) {
-          const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey);
+        if (hasBraveEnabled) {
+          const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey!);
           if (braveContactResult) {
             collectedData.jobTitle = braveContactResult.jobTitle;
             collectedData.socialPosts = braveContactResult.socialPosts;
@@ -404,9 +412,8 @@ ${companySearchResults.join('\n\n')}
           }
         }
 
-        // Always use Perplexity after Brave Search for contact
-        if (apiKeys.perplexityApiKey) {
-          const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey);
+        if (hasPerplexityEnabled) {
+          const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey!);
           if (perplexityContactResult) {
             collectedData.jobTitle = collectedData.jobTitle || perplexityContactResult.jobTitle;
             collectedData.socialPosts = collectedData.socialPosts || perplexityContactResult.socialPosts;

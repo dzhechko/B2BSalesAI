@@ -344,6 +344,61 @@ export default function Settings() {
                         />
                       </div>
 
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-base font-medium">Системы поиска</Label>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Выберите поисковые системы для сбора данных. API ключи требуются только для выбранных систем.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div>
+                                <Label className="font-medium">Brave Search</Label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  Основной веб-поиск и индексация
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={settingsForm.watch("searchSystems")?.includes?.("brave") ?? true}
+                              onCheckedChange={(checked) => {
+                                const current = settingsForm.getValues("searchSystems") || ["brave", "perplexity"];
+                                if (checked) {
+                                  settingsForm.setValue("searchSystems", [...current.filter(s => s !== "brave"), "brave"]);
+                                } else {
+                                  settingsForm.setValue("searchSystems", current.filter(s => s !== "brave"));
+                                }
+                              }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div>
+                                <Label className="font-medium">Perplexity Deep Search</Label>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  AI-поиск с анализом и синтезом информации
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={settingsForm.watch("searchSystems")?.includes?.("perplexity") ?? true}
+                              onCheckedChange={(checked) => {
+                                const current = settingsForm.getValues("searchSystems") || ["brave", "perplexity"];
+                                if (checked) {
+                                  settingsForm.setValue("searchSystems", [...current.filter(s => s !== "perplexity"), "perplexity"]);
+                                } else {
+                                  settingsForm.setValue("searchSystems", current.filter(s => s !== "perplexity"));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                       <Button 
                         type="submit" 
                         disabled={updateSettingsMutation.isPending}

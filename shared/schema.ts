@@ -28,6 +28,7 @@ export const userSettings = pgTable("user_settings", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   theme: text("theme").notNull().default("light"), // 'light' or 'dark'
   playbook: text("playbook"), // Custom playbook content
+  searchSystems: jsonb("search_systems").default('["brave", "perplexity"]'), // Array of enabled search systems
   preferences: jsonb("preferences"), // Additional user preferences
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
