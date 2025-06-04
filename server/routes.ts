@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertApiKeysSchema, insertUserSettingsSchema } from "@shared/schema";
@@ -100,14 +99,13 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const settings = await storage.getUserSettings(req.user!.id);
-      res.json(settings || { 
-        theme: "light", 
-        playbook: null, 
-        searchSystems: ["brave", "perplexity"],
-        preferences: {} 
+      res.json({
+        theme: settings?.theme || 'light',
+        playbook: settings?.playbook || getDefaultPlaybook(),
+        preferences: settings?.preferences || {},
       });
     } catch (error) {
-      console.error('Failed to get user settings:', error);
+      console.error('Failed to get settings:', error);
       res.status(500).json({ message: "Failed to get settings" });
     }
   });
@@ -117,15 +115,15 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const validatedSettings = insertUserSettingsSchema.parse(req.body);
-      const settings = await storage.createOrUpdateUserSettings(req.user!.id, validatedSettings);
-      res.json(settings);
+      await storage.createOrUpdateUserSettings(req.user!.id, validatedSettings);
+      res.json({ message: "Settings updated successfully" });
     } catch (error) {
-      console.error('Failed to update user settings:', error);
+      console.error('Failed to update settings:', error);
       res.status(400).json({ message: "Invalid settings data" });
     }
   });
 
-  // Contacts from AmoCRM
+  // Contacts management
   app.get("/api/contacts", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
@@ -135,67 +133,59 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "AmoCRM credentials not configured" });
       }
 
-      // Fetch contacts from AmoCRM with companies embedded
-      const amoCrmResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts?with=companies`, {
+      // Fetch contacts from AmoCRM
+      const response = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts?limit=20`, {
         headers: {
           'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
-          'Content-Type': 'application/json',
         },
       });
 
-      if (!amoCrmResponse.ok) {
-        throw new Error(`AmoCRM API error: ${amoCrmResponse.status}`);
+      if (!response.ok) {
+        throw new Error(`AmoCRM API error: ${response.status}`);
       }
 
-      const amoCrmData = await amoCrmResponse.json();
-      const contacts = amoCrmData._embedded?.contacts || [];
+      const data = await response.json();
+      const amoCrmContacts = data._embedded?.contacts || [];
 
-      // Store/update contacts in our database
-      const processedContacts = [];
-      for (const contact of contacts) {
-        // Extract company name from embedded companies or fetch separately
-        let companyName = '';
-        if (contact._embedded?.companies?.[0]) {
-          const embeddedCompany = contact._embedded.companies[0];
-          companyName = embeddedCompany.name || '';
-          
-          // If no name in embedded data, fetch full company details
-          if (!companyName && embeddedCompany.id) {
-            try {
-              const companyResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/companies/${embeddedCompany.id}`, {
-                headers: {
-                  'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-              if (companyResponse.ok) {
-                const companyData = await companyResponse.json();
-                companyName = companyData.name || '';
-                console.log(`Fetched company name: ${companyName} for contact ${contact.name}`);
-              }
-            } catch (error) {
-              console.error(`Failed to fetch company ${embeddedCompany.id}:`, error);
+      // Store/update contacts in local database
+      const contacts = [];
+      for (const amoCrmContact of amoCrmContacts) {
+        let companyName = amoCrmContact.company?.name;
+        
+        // Try to get company from embedded companies
+        if (!companyName && amoCrmContact._embedded?.companies?.length > 0) {
+          const companyId = amoCrmContact._embedded.companies[0].id;
+          try {
+            const companyResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/companies/${companyId}`, {
+              headers: {
+                'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
+              },
+            });
+            if (companyResponse.ok) {
+              const companyData = await companyResponse.json();
+              companyName = companyData.name;
+              console.log(`Fetched company name: ${companyName} for contact ${amoCrmContact.name}`);
             }
+          } catch (error) {
+            console.error(`Failed to fetch company ${companyId}:`, error);
           }
         }
 
-        const processedContact = await storage.createOrUpdateContact({
+        const contact = await storage.createOrUpdateContact({
           userId: req.user!.id,
-          amoCrmId: contact.id.toString(),
-          name: contact.name,
-          email: extractContactField(contact, 'EMAIL'),
-          phone: extractContactField(contact, 'PHONE'),
-          position: extractContactField(contact, 'POSITION'),
-          company: companyName || extractContactField(contact, 'COMPANY'),
-          status: getContactStatus(contact),
-          amoCrmData: contact,
-          collectedData: null,
-          recommendations: null,
+          amoCrmId: amoCrmContact.id.toString(),
+          name: amoCrmContact.name,
+          email: extractContactField(amoCrmContact, 'EMAIL'),
+          phone: extractContactField(amoCrmContact, 'PHONE'),
+          position: extractContactField(amoCrmContact, 'POSITION'),
+          company: companyName,
+          status: getContactStatus(amoCrmContact),
+          amoCrmData: amoCrmContact as any,
         });
-        processedContacts.push(processedContact);
+        contacts.push(contact);
       }
 
-      res.json(processedContacts);
+      res.json(contacts);
     } catch (error) {
       console.error('Failed to fetch contacts:', error);
       res.status(500).json({ message: "Failed to fetch contacts from AmoCRM" });
@@ -242,22 +232,6 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "No search systems configured or enabled in settings" });
       }
 
-      // Функция для отправки обновления прогресса
-      const sendProgressUpdate = (stage: 'company' | 'contact' | 'analysis') => {
-        const wss = (app as any).wss;
-        if (wss) {
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === 1) { // WebSocket.OPEN
-              client.send(JSON.stringify({
-                type: 'progress',
-                contactId: contact.id,
-                stage: stage
-              }));
-            }
-          });
-        }
-      };
-
       const collectedData: SearchResult = {
         searchQueries: []
       };
@@ -265,47 +239,18 @@ export function registerRoutes(app: Express): Server {
       // Extract company name from AmoCRM data if not set
       let companyName = contact.company;
       if (!companyName && contact.amoCrmData) {
-        const amoCrmData = contact.amoCrmData as any;
-        if (amoCrmData._embedded?.companies?.[0]) {
-          // Fetch company details from AmoCRM
-          const companyId = amoCrmData._embedded.companies[0].id;
-          try {
-            const companyResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/companies/${companyId}`, {
-              headers: {
-                'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
-                'Content-Type': 'application/json',
-              },
-            });
-            if (companyResponse.ok) {
-              const companyData = await companyResponse.json();
-              companyName = companyData.name;
-              console.log(`Extracted company name from AmoCRM: ${companyName}`);
-            }
-          } catch (error) {
-            console.error('Failed to fetch company from AmoCRM:', error);
-          }
-        }
+        const amoCrmData = contact.amoCrmData as AmoCRMContact;
+        companyName = amoCrmData.company?.name || amoCrmData._embedded?.companies?.[0]?.name;
       }
 
-      // Search for company information
-      let companySearchResults = [];
+      // Company search query
       if (companyName) {
         const companyQuery = `${companyName} отрасль выручка сотрудники основные продукты 2025`;
-        console.log(`Starting data collection for company: ${companyName}`);
-        console.log(`Search query: ${companyQuery}`);
         
+        // Search with enabled systems
         if (hasBraveEnabled) {
-          console.log('Using Brave Search API');
-          const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey!);
-          console.log('Brave Search result:', braveResult);
+          const braveResult = await searchWithBrave(companyQuery, apiKeys!.braveSearchApiKey!);
           if (braveResult) {
-            collectedData.industry = braveResult.industry;
-            collectedData.revenue = braveResult.revenue;
-            collectedData.employees = braveResult.employees;
-            collectedData.products = braveResult.products;
-            companySearchResults.push(`Brave Search: ${JSON.stringify(braveResult)}`);
-            
-            // Save detailed query and response
             collectedData.searchQueries!.push({
               service: 'brave',
               query: companyQuery,
@@ -313,21 +258,14 @@ export function registerRoutes(app: Express): Server {
               fullResponse: braveResult.fullResponse,
               timestamp: new Date().toISOString()
             });
+            // Merge company data
+            Object.assign(collectedData, braveResult);
           }
         }
-
+        
         if (hasPerplexityEnabled) {
-          console.log('Using Perplexity API');
-          const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey!);
-          console.log('Perplexity Search result:', perplexityResult);
+          const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys!.perplexityApiKey!);
           if (perplexityResult) {
-            collectedData.industry = collectedData.industry || perplexityResult.industry;
-            collectedData.revenue = collectedData.revenue || perplexityResult.revenue;
-            collectedData.employees = collectedData.employees || perplexityResult.employees;
-            collectedData.products = collectedData.products || perplexityResult.products;
-            companySearchResults.push(`Perplexity: ${JSON.stringify(perplexityResult)}`);
-            
-            // Save detailed query and response
             collectedData.searchQueries!.push({
               service: 'perplexity',
               query: companyQuery,
@@ -335,203 +273,53 @@ export function registerRoutes(app: Express): Server {
               fullResponse: perplexityResult.fullResponse,
               timestamp: new Date().toISOString()
             });
+            // Merge company data (Perplexity takes precedence)
+            Object.assign(collectedData, perplexityResult);
           }
         }
-
-        // Use GPT-4o to extract structured company data from search results
-        if (apiKeys.openaiApiKey && companySearchResults.length > 0) {
-          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
-          const dataExtractionPrompt = `
-Извлеки структурированную информацию о компании "${companyName}" из результатов поиска:
-
-${companySearchResults.join('\n\n')}
-
-Верни ответ строго в JSON формате:
-{
-  "industry": "точная отрасль деятельности",
-  "revenue": "выручка или доходы (с цифрами и валютой)",
-  "employees": "количество сотрудников (только число)",
-  "products": "основные продукты и услуги"
-}
-
-Требования:
-- Если информации нет, ставь null
-- Для выручки указывай конкретные суммы с валютой
-- Для сотрудников только числовое значение
-- Для отрасли используй стандартные названия (банковский сектор, IT, промышленность и т.д.)
-- Для продуктов кратко перечисли основные направления`;
-
-          try {
-            const extractionResponse = await openai.chat.completions.create({
-              model: "gpt-4o-mini",
-              messages: [{ role: "user", content: dataExtractionPrompt }],
-              temperature: 0.1,
-              response_format: { type: "json_object" },
-            });
-            
-            const extractedData = JSON.parse(extractionResponse.choices[0].message.content || '{}');
-            console.log('GPT-4o extracted company data:', extractedData);
-            
-            // Override parsed data with LLM-extracted data
-            collectedData.industry = extractedData.industry || collectedData.industry;
-            collectedData.revenue = extractedData.revenue || collectedData.revenue;
-            collectedData.employees = extractedData.employees || collectedData.employees;
-            collectedData.products = extractedData.products || collectedData.products;
-            
-          } catch (error) {
-            console.error('Failed to extract company data with GPT-4o:', error);
-          }
-        }
-
-        // Generate company summary using GPT-4o
-        if (apiKeys.openaiApiKey && companySearchResults.length > 0) {
-          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
-          const companyPrompt = `
-Создай краткое саммари данных о компании ${companyName} на основе результатов поиска:
-
-${companySearchResults.join('\n\n')}
-
-Саммари должно быть структурированным и включать:
-- Отрасль деятельности
-- Финансовые показатели
-- Размер компании
-- Ключевые продукты/услуги
-
-Ответь коротким текстом на русском языке (максимум 150 слов).`;
-
-          try {
-            const summaryResponse = await openai.chat.completions.create({
-              model: "gpt-4o",
-              messages: [{ role: "user", content: companyPrompt }],
-              temperature: 0.3,
-            });
-            
-            collectedData.companySummary = summaryResponse.choices[0].message.content || undefined;
-          } catch (error) {
-            console.error('Failed to generate company summary:', error);
-          }
-        }
-      } else {
-        console.log('No company name found for contact');
       }
 
-      // Search for contact information
-      let contactSearchResults = [];
+      // Contact search query
       if (contact.name && companyName) {
         const contactQuery = `${contact.name} должность в ${companyName} 3 последние публикации в соц сетях`;
-        console.log(`Starting contact search: ${contactQuery}`);
         
         if (hasBraveEnabled) {
-          const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey!);
-          if (braveContactResult) {
-            collectedData.jobTitle = braveContactResult.jobTitle;
-            collectedData.socialPosts = braveContactResult.socialPosts;
-            contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactResult)}`);
-            
-            // Save detailed query and response
+          const braveResult = await searchWithBrave(contactQuery, apiKeys!.braveSearchApiKey!);
+          if (braveResult) {
             collectedData.searchQueries!.push({
               service: 'brave',
               query: contactQuery,
-              response: JSON.stringify(braveContactResult),
+              response: JSON.stringify(braveResult),
+              fullResponse: braveResult.fullResponse,
               timestamp: new Date().toISOString()
             });
+            // Merge contact-specific data
+            if (braveResult.jobTitle) collectedData.jobTitle = braveResult.jobTitle;
+            if (braveResult.socialPosts) collectedData.socialPosts = braveResult.socialPosts;
+            if (braveResult.contactSummary) collectedData.contactSummary = braveResult.contactSummary;
           }
         }
-
+        
         if (hasPerplexityEnabled) {
-          const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey!);
-          if (perplexityContactResult) {
-            collectedData.jobTitle = collectedData.jobTitle || perplexityContactResult.jobTitle;
-            collectedData.socialPosts = collectedData.socialPosts || perplexityContactResult.socialPosts;
-            contactSearchResults.push(`Perplexity: ${JSON.stringify(perplexityContactResult)}`);
-            
-            // Save detailed query and response
+          const perplexityResult = await searchWithPerplexity(contactQuery, apiKeys!.perplexityApiKey!);
+          if (perplexityResult) {
             collectedData.searchQueries!.push({
               service: 'perplexity',
               query: contactQuery,
-              response: JSON.stringify(perplexityContactResult),
+              response: JSON.stringify(perplexityResult),
+              fullResponse: perplexityResult.fullResponse,
               timestamp: new Date().toISOString()
             });
-          }
-        }
-
-        // Use GPT-4o to extract structured contact data from search results
-        if (apiKeys.openaiApiKey && contactSearchResults.length > 0) {
-          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
-          const contactDataExtractionPrompt = `
-Извлеки структурированную информацию о контакте "${contact.name}" из компании "${companyName}" из результатов поиска:
-
-${contactSearchResults.join('\n\n')}
-
-Верни ответ строго в JSON формате:
-{
-  "jobTitle": "точная должность контакта",
-  "socialPosts": [
-    {
-      "platform": "название платформы",
-      "date": "дата публикации",
-      "content": "содержание поста"
-    }
-  ]
-}
-
-Требования:
-- Если информации нет, ставь null
-- Для должности используй точное название позиции
-- Для социальных постов найди максимум 3 последние публикации
-- Даты в формате DD.MM.YYYY`;
-
-          try {
-            const contactExtractionResponse = await openai.chat.completions.create({
-              model: "gpt-4o-mini",
-              messages: [{ role: "user", content: contactDataExtractionPrompt }],
-              temperature: 0.1,
-              response_format: { type: "json_object" },
-            });
-            
-            const extractedContactData = JSON.parse(contactExtractionResponse.choices[0].message.content || '{}');
-            console.log('GPT-4o extracted contact data:', extractedContactData);
-            
-            // Override parsed data with LLM-extracted data
-            collectedData.jobTitle = extractedContactData.jobTitle || collectedData.jobTitle;
-            collectedData.socialPosts = extractedContactData.socialPosts || collectedData.socialPosts;
-            
-          } catch (error) {
-            console.error('Failed to extract contact data with GPT-4o:', error);
-          }
-        }
-
-        // Generate contact summary using GPT-4o
-        if (apiKeys.openaiApiKey && contactSearchResults.length > 0) {
-          const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
-          const contactPrompt = `
-Создай краткое резюме данных о контакте ${contact.name} из компании ${companyName} на основе результатов поиска:
-
-${contactSearchResults.join('\n\n')}
-
-Резюме должно включать:
-- Текущую должность
-- Профессиональную активность
-- Ключевые темы публикаций
-
-Ответь коротким текстом на русском языке (максимум 100 слов).`;
-
-          try {
-            const contactSummaryResponse = await openai.chat.completions.create({
-              model: "gpt-4o", 
-              messages: [{ role: "user", content: contactPrompt }],
-              temperature: 0.3,
-            });
-            
-            collectedData.contactSummary = contactSummaryResponse.choices[0].message.content || undefined;
-          } catch (error) {
-            console.error('Failed to generate contact summary:', error);
+            // Merge contact-specific data (Perplexity takes precedence)
+            if (perplexityResult.jobTitle) collectedData.jobTitle = perplexityResult.jobTitle;
+            if (perplexityResult.socialPosts) collectedData.socialPosts = perplexityResult.socialPosts;
+            if (perplexityResult.contactSummary) collectedData.contactSummary = perplexityResult.contactSummary;
           }
         }
       }
 
-      console.log('Final collected data:', collectedData);
-
+      console.log('Collected data:', collectedData);
+      
       // Update contact with collected data
       const updatedContact = await storage.createOrUpdateContact({
         userId: contact.userId,
@@ -544,10 +332,10 @@ ${contactSearchResults.join('\n\n')}
         status: contact.status,
         amoCrmData: contact.amoCrmData as any,
         collectedData: collectedData as any,
-        recommendations: contact.recommendations as any,
       });
-
+      
       console.log('Updated contact with collected data');
+
       res.json(updatedContact);
     } catch (error) {
       console.error('Failed to collect data:', error);
@@ -555,12 +343,11 @@ ${contactSearchResults.join('\n\n')}
     }
   });
 
-  // Generate recommendations
+  // Generate recommendations for a contact
   app.post("/api/contacts/:id/recommendations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const { model = "gpt-4o" } = req.body;
       const contact = await storage.getContact(parseInt(req.params.id), req.user!.id);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
@@ -571,22 +358,21 @@ ${contactSearchResults.join('\n\n')}
         return res.status(400).json({ message: "OpenAI API key not configured" });
       }
 
-      const settings = await storage.getUserSettings(req.user!.id);
-      const playbook = settings?.playbook || getDefaultPlaybook();
+      const userSettings = await storage.getUserSettings(req.user!.id);
+      const playbook = userSettings?.playbook || getDefaultPlaybook();
 
       const openai = new OpenAI({ apiKey: apiKeys.openaiApiKey });
 
       const prompt = `
-Ты - эксперт по B2B продажам. На основе следующей информации создай 3 персонализированные рекомендации продуктов для продажи:
+Ты - эксперт по B2B продажам. На основе данных о клиенте и справочника продуктов создай персонализированные рекомендации.
 
-СПРАВОЧНИК ПРОДУКТОВ:
 ${playbook}
 
 ИНФОРМАЦИЯ О КОМПАНИИ:
-- Название: ${contact.company}
+- Название: ${contact.company || 'Не указано'}
 - Отрасль: ${(contact.collectedData as any)?.industry || 'Не указана'}
 - Выручка: ${(contact.collectedData as any)?.revenue || 'Не указана'}
-- Количество сотрудников: ${(contact.collectedData as any)?.employees || 'Не указано'}
+- Сотрудники: ${(contact.collectedData as any)?.employees || 'Не указано'}
 - Основные продукты: ${(contact.collectedData as any)?.products || 'Не указаны'}
 
 ИНФОРМАЦИЯ О КОНТАКТЕ:
@@ -610,12 +396,10 @@ ${playbook}
       "benefits": "Потенциальные выгоды"
     }
   ]
-}
-`;
+}`;
 
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       const response = await openai.chat.completions.create({
-        model: model,
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
         temperature: 0.7,
@@ -659,10 +443,10 @@ ${playbook}
 function extractContactField(contact: AmoCRMContact, fieldType: string): string | undefined {
   if (!contact.custom_fields_values) return undefined;
   
-  // Map field types to field codes and names
+  // Map field types to possible field codes/names
   const fieldMapping: Record<string, string[]> = {
-    'PHONE': ['PHONE', 'Телефон'],
-    'EMAIL': ['EMAIL', 'Email'],
+    'EMAIL': ['EMAIL', 'E-mail', 'Электронная почта'],
+    'PHONE': ['PHONE', 'Телефон', 'Phone'],
     'POSITION': ['POSITION', 'Должность'],
     'COMPANY': ['COMPANY', 'Компания'],
   };
@@ -722,15 +506,18 @@ async function searchWithPerplexity(query: string, apiKey: string): Promise<Sear
         messages: [
           {
             role: 'system',
-            content: 'Ты - эксперт по анализу компаний. Извлеки структурированную информацию из поискового запроса и верни в JSON формате.',
+            content: 'Ты эксперт по анализу компаний и контактов. Извлекай структурированную информацию из поисковых результатов.'
           },
           {
             role: 'user',
-            content: query,
-          },
+            content: query
+          }
         ],
         temperature: 0.2,
-        return_related_questions: false,
+        top_p: 0.9,
+        search_recency_filter: 'month',
+        return_images: false,
+        return_related_questions: false
       }),
     });
 
@@ -739,15 +526,13 @@ async function searchWithPerplexity(query: string, apiKey: string): Promise<Sear
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.choices?.[0]?.message?.content || '';
     
-    if (content) {
-      const result = parsePerplexityResponse(content);
-      result.fullResponse = JSON.stringify(data, null, 2);
-      return result;
-    }
+    // Parse Perplexity response to extract structured data
+    const result = parsePerplexityResponse(content);
+    result.fullResponse = JSON.stringify(data, null, 2);
     
-    return null;
+    return result;
   } catch (error) {
     console.error('Perplexity Search failed:', error);
     return null;
@@ -755,15 +540,9 @@ async function searchWithPerplexity(query: string, apiKey: string): Promise<Sear
 }
 
 function parseSearchResults(results: any[]): SearchResult {
-  if (!results || results.length === 0) {
-    console.log('No search results to parse');
-    return {};
-  }
+  const combinedText = results.map(r => r.title + ' ' + r.description).join(' ');
   
-  const combinedText = results.map(r => `${r.title || ''} ${r.description || ''} ${r.snippet || ''}`).join(' ').toLowerCase();
-  console.log('Combined search text for parsing:', combinedText.substring(0, 200) + '...');
-  
-  const result = {
+  return {
     industry: extractIndustry(combinedText),
     revenue: extractRevenue(combinedText),
     employees: extractEmployees(combinedText),
@@ -771,97 +550,104 @@ function parseSearchResults(results: any[]): SearchResult {
     jobTitle: extractJobTitle(combinedText),
     socialPosts: extractSocialPosts(results),
   };
-  
-  console.log('Parsed search results:', result);
-  return result;
 }
 
 function parsePerplexityResponse(content: string): SearchResult {
-  // Parse Perplexity's structured response
-  try {
-    return JSON.parse(content);
-  } catch {
-    // Fallback to text parsing
-    return {
-      industry: extractIndustry(content),
-      revenue: extractRevenue(content),
-      employees: extractEmployees(content),
-      products: extractProducts(content),
-      jobTitle: extractJobTitle(content),
-    };
-  }
+  // Use OpenAI to extract structured data from Perplexity response
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  
+  // For now, do basic extraction - this could be enhanced with OpenAI parsing
+  return {
+    industry: extractIndustry(content),
+    revenue: extractRevenue(content),
+    employees: extractEmployees(content),
+    products: extractProducts(content),
+    jobTitle: extractJobTitle(content),
+    companySummary: content.substring(0, 500) + '...',
+    contactSummary: content.substring(0, 300) + '...',
+  };
 }
 
 function extractIndustry(text: string): string | undefined {
-  const patterns = [
-    /отрасль[:\s]*([^.,\n]+)/i,
-    /сфера[:\s]*([^.,\n]+)/i,
-    /индустрия[:\s]*([^.,\n]+)/i,
+  const industryPatterns = [
+    /отрасл[ьи]?\s*[:\-]?\s*([а-яё\s]+)/i,
+    /сфер[ае]\s*деятельности\s*[:\-]?\s*([а-яё\s]+)/i,
+    /индустри[яи]\s*[:\-]?\s*([а-яё\s]+)/i,
   ];
   
-  for (const pattern of patterns) {
+  for (const pattern of industryPatterns) {
     const match = text.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      return match[1].trim().split(/[,.]/)[0];
+    }
   }
   
   return undefined;
 }
 
 function extractRevenue(text: string): string | undefined {
-  const patterns = [
-    /выручка[:\s]*([^.,\n]+)/i,
-    /доход[:\s]*([^.,\n]+)/i,
-    /оборот[:\s]*([^.,\n]+)/i,
+  const revenuePatterns = [
+    /выручк[ае]\s*[:\-]?\s*([\d\s,]+[\s]?(?:млрд|млн|тыс)?\.?\s?рубл)/i,
+    /оборот\s*[:\-]?\s*([\d\s,]+[\s]?(?:млрд|млн|тыс)?\.?\s?рубл)/i,
+    /доход\s*[:\-]?\s*([\d\s,]+[\s]?(?:млрд|млн|тыс)?\.?\s?рубл)/i,
   ];
   
-  for (const pattern of patterns) {
+  for (const pattern of revenuePatterns) {
     const match = text.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      return match[1].trim();
+    }
   }
   
   return undefined;
 }
 
 function extractEmployees(text: string): string | undefined {
-  const patterns = [
-    /сотрудник[ов]*[:\s]*([^.,\n]+)/i,
-    /персонал[:\s]*([^.,\n]+)/i,
-    /штат[:\s]*([^.,\n]+)/i,
+  const employeePatterns = [
+    /сотрудник[ио]в?\s*[:\-]?\s*([\d\s,]+)/i,
+    /персонал[а]?\s*[:\-]?\s*([\d\s,]+)/i,
+    /штат\s*[:\-]?\s*([\d\s,]+)/i,
   ];
   
-  for (const pattern of patterns) {
+  for (const pattern of employeePatterns) {
     const match = text.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      return match[1].trim();
+    }
   }
   
   return undefined;
 }
 
 function extractProducts(text: string): string | undefined {
-  const patterns = [
-    /продукт[ыи]*[:\s]*([^.,\n]+)/i,
-    /услуг[аи]*[:\s]*([^.,\n]+)/i,
-    /решени[яе]*[:\s]*([^.,\n]+)/i,
+  const productPatterns = [
+    /продукт[ыа]?\s*[:\-]?\s*([а-яё\s,]+)/i,
+    /услуг[ии]?\s*[:\-]?\s*([а-яё\s,]+)/i,
+    /решени[яе]\s*[:\-]?\s*([а-яё\s,]+)/i,
   ];
   
-  for (const pattern of patterns) {
+  for (const pattern of productPatterns) {
     const match = text.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      return match[1].trim().split(/[.!?]/)[0];
+    }
   }
   
   return undefined;
 }
 
 function extractJobTitle(text: string): string | undefined {
-  const patterns = [
-    /должность[:\s]*([^.,\n]+)/i,
-    /позиция[:\s]*([^.,\n]+)/i,
-    /директор[:\s]*([^.,\n]*)/i,
+  const titlePatterns = [
+    /должност[ьи]\s*[:\-]?\s*([а-яё\s]+)/i,
+    /позици[яи]\s*[:\-]?\s*([а-яё\s]+)/i,
+    /роль\s*[:\-]?\s*([а-яё\s]+)/i,
   ];
   
-  for (const pattern of patterns) {
+  for (const pattern of titlePatterns) {
     const match = text.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      return match[1].trim().split(/[,.]/)[0];
+    }
   }
   
   return undefined;
@@ -925,8 +711,4 @@ function getDefaultPlaybook(): string {
 - Соответствие требованиям безопасности
 - Гибкая настройка под бизнес-процессы
 `;
-}
-
-  const httpServer = createServer(app);
-  return httpServer;
 }
