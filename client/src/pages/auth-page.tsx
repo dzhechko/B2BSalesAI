@@ -88,9 +88,10 @@ export default function AuthPage() {
                 <CardContent>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
                     <div>
-                      <Label htmlFor="username">Имя пользователя</Label>
+                      <Label htmlFor="username">Имя пользователя или Email</Label>
                       <Input
                         id="username"
+                        placeholder="username или email@example.com"
                         {...loginForm.register("username")}
                         className="mt-1"
                       />
