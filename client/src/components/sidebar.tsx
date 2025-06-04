@@ -45,8 +45,8 @@ export default function Sidebar() {
             const Icon = item.icon;
             return (
               <Link key={item.name} href={item.href}>
-                <a
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                <div
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                     item.current
                       ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -54,7 +54,7 @@ export default function Sidebar() {
                 >
                   <Icon className="w-5 h-5" />
                   <span className={item.current ? 'font-medium' : ''}>{item.name}</span>
-                </a>
+                </div>
               </Link>
             );
           })}
