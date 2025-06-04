@@ -15,7 +15,7 @@ export default function ProgressPanel({ isVisible, onToggle }: ProgressPanelProp
   const progressSteps = [
     {
       title: "Поиск информации о компании",
-      query: "запрос вида \"<Компания> отрасль выручка сотрудники основные продукты 2025\"",
+      query: "запрос вида \"<Компания> отрасль выручка сотрудники основные продукты\"",
       status: "completed",
       progress: 100,
       result: "✓ Найдены: отрасль, выручка, количество сотрудников, основные продукты"

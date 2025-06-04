@@ -273,7 +273,7 @@ export function registerRoutes(app: Express): Server {
       // Search for company information
       let companySearchResults = [];
       if (companyName) {
-        const companyQuery = `${companyName} отрасль выручка сотрудники основные продукты 2025`;
+        const companyQuery = `${companyName} отрасль выручка сотрудники основные продукты`;
         console.log(`Starting data collection for company: ${companyName}`);
         console.log(`Search query: ${companyQuery}`);
         
