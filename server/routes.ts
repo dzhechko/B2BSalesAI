@@ -390,7 +390,11 @@ ${playbook}
         temperature: 0.7,
       });
 
-      const recommendations = JSON.parse(response.choices[0].message.content || '{}');
+      const rawContent = response.choices[0].message.content || '{}';
+      console.log('OpenAI response content:', rawContent);
+      
+      const recommendations = JSON.parse(rawContent);
+      console.log('Parsed recommendations:', recommendations);
 
       // Update contact with recommendations
       const updatedContact = await storage.createOrUpdateContact({
@@ -406,6 +410,8 @@ ${playbook}
         collectedData: contact.collectedData as any,
         recommendations: recommendations as any,
       });
+      
+      console.log('Updated contact with recommendations:', updatedContact.id);
 
       res.json(recommendations);
     } catch (error) {
