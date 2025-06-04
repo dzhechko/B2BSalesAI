@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ContactDetail from "@/pages/contact-detail";
 import Settings from "@/pages/settings";
+import Playbook from "@/pages/playbook";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/contact/:id" component={ContactDetail} />
       <ProtectedRoute path="/settings" component={Settings} />
+      <ProtectedRoute path="/playbook" component={Playbook} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

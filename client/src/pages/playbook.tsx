@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,11 +20,17 @@ const playbookSchema = z.object({
 
 type PlaybookForm = z.infer<typeof playbookSchema>;
 
+type UserSettingsData = {
+  theme: string;
+  playbook: string;
+  preferences: Record<string, any>;
+};
+
 export default function Playbook() {
   const [activeTab, setActiveTab] = useState("edit");
   const { toast } = useToast();
 
-  const { data: userSettings, isLoading } = useQuery({
+  const { data: userSettings, isLoading } = useQuery<UserSettingsData>({
     queryKey: ["/api/settings"],
   });
 
@@ -36,11 +42,11 @@ export default function Playbook() {
   });
 
   // Update form when data loads
-  useState(() => {
+  useEffect(() => {
     if (userSettings?.playbook) {
       form.setValue("playbook", userSettings.playbook);
     }
-  });
+  }, [userSettings, form]);
 
   const updatePlaybookMutation = useMutation({
     mutationFn: async (data: PlaybookForm) => {
