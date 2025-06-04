@@ -15,21 +15,21 @@ export default function ProgressPanel({ isVisible, onToggle }: ProgressPanelProp
   const progressSteps = [
     {
       title: "Поиск информации о компании",
-      query: "Сбербанк отрасль выручка сотрудники основные продукты 2024",
+      query: "запрос вида \"Сбербанк отрасль выручка сотрудники основные продукты 2024\"",
       status: "completed",
       progress: 100,
       result: "✓ Найдены: отрасль, выручка, количество сотрудников, основные продукты"
     },
     {
-      title: "Поиск через Brave Search",
-      query: "Иван Петров Сбербанк LinkedIn должность",
+      title: "Поиск",
+      query: "запрос вида \"Иван Петров Сбербанк LinkedIn должность\"",
       status: "running",
       progress: 60,
       result: null
     },
     {
       title: "Анализ социальных сетей",
-      query: "Иван Петров Сбербанк публикации LinkedIn",
+      query: "запрос вида \"Иван Петров Сбербанк публикации LinkedIn\"",
       status: "pending",
       progress: 0,
       result: null
@@ -94,7 +94,7 @@ export default function ProgressPanel({ isVisible, onToggle }: ProgressPanelProp
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 dark:text-white">{step.title}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Запрос: "{step.query}"
+                    {step.query}
                   </p>
                   {step.status === "running" && (
                     <div className="mt-2">
