@@ -9,7 +9,7 @@ import crypto from "crypto";
 const PostgresSessionStore = connectPg(session);
 
 // Encryption functions for API keys
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32);
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex') : Buffer.from('b2b-sales-app-encryption-key-32-bytes!!', 'utf8');
 const IV_LENGTH = 16;
 
 function encrypt(text: string): string {
@@ -22,6 +22,10 @@ function encrypt(text: string): string {
 
 function decrypt(text: string): string {
   try {
+    if (!text || !text.includes(':')) {
+      console.error('Invalid encrypted text format');
+      return '';
+    }
     const textParts = text.split(':');
     const iv = Buffer.from(textParts.shift()!, 'hex');
     const encryptedText = textParts.join(':');
