@@ -187,7 +187,7 @@ export default function Settings() {
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={apiKeysForm.handleSubmit(onUpdateApiKeys)} className="space-y-6">
+                    <form onSubmit={apiKeysForm.handleSubmit(onUpdateApiKeys)} className="space-y-6" autoComplete="off">
                       {/* AmoCRM */}
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -210,6 +210,7 @@ export default function Settings() {
                             <Input
                               id="amocrm-subdomain"
                               placeholder="mycompany (из mycompany.amocrm.ru)"
+                              autoComplete="off"
                               {...apiKeysForm.register("amoCrmSubdomain")}
                             />
                           </div>
@@ -219,6 +220,7 @@ export default function Settings() {
                               id="amocrm-key"
                               type="password"
                               placeholder="Введите Access Token AmoCRM"
+                              autoComplete="new-password"
                               {...apiKeysForm.register("amoCrmApiKey")}
                             />
                           </div>
@@ -245,6 +247,7 @@ export default function Settings() {
                           id="openai-key"
                           type="password"
                           placeholder="Введите API ключ OpenAI"
+                          autoComplete="new-password"
                           {...apiKeysForm.register("openaiApiKey")}
                         />
                       </div>
@@ -271,6 +274,7 @@ export default function Settings() {
                           id="brave-key"
                           type="password"
                           placeholder="Введите API ключ Brave Search"
+                          autoComplete="new-password"
                           {...apiKeysForm.register("braveSearchApiKey")}
                         />
                       </div>
@@ -297,6 +301,7 @@ export default function Settings() {
                           id="perplexity-key"
                           type="password"
                           placeholder="Введите API ключ Perplexity"
+                          autoComplete="new-password"
                           {...apiKeysForm.register("perplexityApiKey")}
                         />
                       </div>
