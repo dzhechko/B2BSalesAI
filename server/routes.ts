@@ -47,6 +47,12 @@ interface SearchResult {
   }>;
   companySummary?: string;
   contactSummary?: string;
+  searchQueries?: Array<{
+    service: 'brave' | 'perplexity';
+    query: string;
+    response: string;
+    timestamp: string;
+  }>;
 }
 
 export function registerRoutes(app: Express): Server {
@@ -219,7 +225,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Search API credentials not configured" });
       }
 
-      const collectedData: SearchResult = {};
+      const collectedData: SearchResult = {
+        searchQueries: []
+      };
 
       // Extract company name from AmoCRM data if not set
       let companyName = contact.company;
@@ -263,6 +271,14 @@ export function registerRoutes(app: Express): Server {
             collectedData.employees = braveResult.employees;
             collectedData.products = braveResult.products;
             companySearchResults.push(`Brave Search: ${JSON.stringify(braveResult)}`);
+            
+            // Save detailed query and response
+            collectedData.searchQueries!.push({
+              service: 'brave',
+              query: companyQuery,
+              response: JSON.stringify(braveResult),
+              timestamp: new Date().toISOString()
+            });
           }
         }
 
@@ -277,6 +293,14 @@ export function registerRoutes(app: Express): Server {
             collectedData.employees = collectedData.employees || perplexityResult.employees;
             collectedData.products = collectedData.products || perplexityResult.products;
             companySearchResults.push(`Perplexity: ${JSON.stringify(perplexityResult)}`);
+            
+            // Save detailed query and response
+            collectedData.searchQueries!.push({
+              service: 'perplexity',
+              query: companyQuery,
+              response: JSON.stringify(perplexityResult),
+              timestamp: new Date().toISOString()
+            });
           }
         }
 
@@ -324,6 +348,14 @@ ${companySearchResults.join('\n\n')}
             collectedData.jobTitle = braveContactResult.jobTitle;
             collectedData.socialPosts = braveContactResult.socialPosts;
             contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactResult)}`);
+            
+            // Save detailed query and response
+            collectedData.searchQueries!.push({
+              service: 'brave',
+              query: contactQuery,
+              response: JSON.stringify(braveContactResult),
+              timestamp: new Date().toISOString()
+            });
           }
         }
 
@@ -334,6 +366,14 @@ ${companySearchResults.join('\n\n')}
             collectedData.jobTitle = collectedData.jobTitle || perplexityContactResult.jobTitle;
             collectedData.socialPosts = collectedData.socialPosts || perplexityContactResult.socialPosts;
             contactSearchResults.push(`Perplexity: ${JSON.stringify(perplexityContactResult)}`);
+            
+            // Save detailed query and response
+            collectedData.searchQueries!.push({
+              service: 'perplexity',
+              query: contactQuery,
+              response: JSON.stringify(perplexityContactResult),
+              timestamp: new Date().toISOString()
+            });
           }
         }
 

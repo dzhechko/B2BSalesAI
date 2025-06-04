@@ -337,7 +337,7 @@ export default function ContactDetail() {
                     {(contact.collectedData as CollectedData)?.companySummary && (
                       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <span className="text-sm font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                          САММАРИ КОМПАНИИ
+                          РЕЗЮМЕ КОМПАНИИ
                         </span>
                         <p className="mt-2 text-gray-900 dark:text-white leading-relaxed">
                           {(contact.collectedData as CollectedData).companySummary}
@@ -393,7 +393,7 @@ export default function ContactDetail() {
                     {(contact.collectedData as CollectedData)?.contactSummary && (
                       <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                         <span className="text-sm font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">
-                          САММАРИ КОНТАКТА
+                          РЕЗЮМЕ КОНТАКТА
                         </span>
                         <p className="mt-2 text-gray-900 dark:text-white leading-relaxed">
                           {(contact.collectedData as CollectedData).contactSummary}
