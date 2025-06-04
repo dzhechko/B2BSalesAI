@@ -170,7 +170,7 @@ export default function ContactDetail() {
                       </div>
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Статус:</span>
-                        <Badge className={`ml-2 ${getStatusColor(contact.status)}`}>
+                        <Badge className={`ml-2 ${getStatusColor(contact.status || '')}`}>
                           {contact.status || 'Не указан'}
                         </Badge>
                       </div>
@@ -302,7 +302,7 @@ export default function ContactDetail() {
                         КОЛИЧЕСТВО СОТРУДНИКОВ
                       </span>
                       <p className="mt-1 text-gray-900 dark:text-white">
-                        {contact.collectedData?.employees || 'Не найдено'}
+                        {(contact.collectedData as CollectedData)?.employees || 'Не найдено'}
                       </p>
                     </div>
                     <div>
@@ -310,7 +310,7 @@ export default function ContactDetail() {
                         ОСНОВНЫЕ ПРОДУКТЫ
                       </span>
                       <p className="mt-1 text-gray-900 dark:text-white">
-                        {contact.collectedData?.products || 'Не найдено'}
+                        {(contact.collectedData as CollectedData)?.products || 'Не найдено'}
                       </p>
                     </div>
                   </div>
@@ -332,7 +332,7 @@ export default function ContactDetail() {
                         ДОЛЖНОСТЬ
                       </span>
                       <p className="mt-1 text-gray-900 dark:text-white">
-                        {contact.collectedData?.jobTitle || contact.position || 'Не найдено'}
+                        {(contact.collectedData as CollectedData)?.jobTitle || contact.position || 'Не найдено'}
                       </p>
                     </div>
                     <div>
@@ -340,8 +340,8 @@ export default function ContactDetail() {
                         ПОСЛЕДНИЕ ПУБЛИКАЦИИ
                       </span>
                       <div className="mt-2 space-y-2">
-                        {contact.collectedData?.socialPosts && contact.collectedData.socialPosts.length > 0 ? (
-                          contact.collectedData.socialPosts.slice(0, 3).map((post, index) => (
+                        {(contact.collectedData as CollectedData)?.socialPosts && (contact.collectedData as CollectedData).socialPosts!.length > 0 ? (
+                          (contact.collectedData as CollectedData).socialPosts!.slice(0, 3).map((post: any, index: number) => (
                             <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
                               <p className="font-medium text-gray-900 dark:text-white">
                                 {post.platform} • {post.date}
