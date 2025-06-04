@@ -65,8 +65,8 @@ export default function Settings() {
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
       theme: theme,
-      playbook: "",
-      preferences: {},
+      playbook: userSettings?.playbook || "",
+      preferences: userSettings?.preferences || {},
     },
   });
 
