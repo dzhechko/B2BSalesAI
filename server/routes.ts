@@ -237,6 +237,12 @@ export function registerRoutes(app: Express): Server {
       const hasBraveEnabled = enabledSystems.includes("brave") && apiKeys?.braveSearchApiKey;
       const hasPerplexityEnabled = enabledSystems.includes("perplexity") && apiKeys?.perplexityApiKey;
       
+      console.log('Enabled systems:', enabledSystems);
+      console.log('Has Brave API key:', !!apiKeys?.braveSearchApiKey);
+      console.log('Has Perplexity API key:', !!apiKeys?.perplexityApiKey);
+      console.log('Brave enabled:', hasBraveEnabled);
+      console.log('Perplexity enabled:', hasPerplexityEnabled);
+      
       if (!hasBraveEnabled && !hasPerplexityEnabled) {
         return res.status(400).json({ message: "No search systems configured or enabled in settings" });
       }
