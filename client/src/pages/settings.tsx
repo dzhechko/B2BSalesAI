@@ -23,16 +23,30 @@ const settingsFormSchema = insertUserSettingsSchema;
 type ApiKeysForm = z.infer<typeof apiKeysFormSchema>;
 type SettingsForm = z.infer<typeof settingsFormSchema>;
 
+type ApiKeysStatus = {
+  hasAmoCrmToken: boolean;
+  hasOpenAiKey: boolean;
+  hasBraveSearchKey: boolean;
+  hasPerplexityKey: boolean;
+  amoCrmSubdomain: string;
+};
+
+type UserSettingsData = {
+  theme: string;
+  playbook: string;
+  preferences: Record<string, any>;
+};
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("keys");
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
-  const { data: apiKeysStatus } = useQuery({
+  const { data: apiKeysStatus } = useQuery<ApiKeysStatus>({
     queryKey: ["/api/keys"],
   });
 
-  const { data: userSettings } = useQuery({
+  const { data: userSettings } = useQuery<UserSettingsData>({
     queryKey: ["/api/settings"],
   });
 
@@ -40,7 +54,7 @@ export default function Settings() {
     resolver: zodResolver(apiKeysFormSchema),
     defaultValues: {
       amoCrmApiKey: "",
-      amoCrmSubdomain: apiKeysStatus?.amoCrmSubdomain || "",
+      amoCrmSubdomain: "",
       openaiApiKey: "",
       braveSearchApiKey: "",
       perplexityApiKey: "",
@@ -49,10 +63,10 @@ export default function Settings() {
 
   const settingsForm = useForm<SettingsForm>({
     resolver: zodResolver(settingsFormSchema),
-    values: {
-      theme: userSettings?.theme || theme,
-      playbook: userSettings?.playbook || "",
-      preferences: userSettings?.preferences || {},
+    defaultValues: {
+      theme: theme,
+      playbook: "",
+      preferences: {},
     },
   });
 
@@ -160,7 +174,7 @@ export default function Settings() {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label className="text-base font-medium">AmoCRM</Label>
-                          {apiKeysStatus?.hasAmoCrmKey ? (
+                          {apiKeysStatus?.hasAmoCrmToken ? (
                             <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
                               <Check className="w-4 h-4" />
                               <span className="text-sm">Настроено</span>
@@ -177,16 +191,16 @@ export default function Settings() {
                             <Label htmlFor="amocrm-subdomain">Поддомен</Label>
                             <Input
                               id="amocrm-subdomain"
-                              placeholder="your-domain"
+                              placeholder="mycompany (из mycompany.amocrm.ru)"
                               {...apiKeysForm.register("amoCrmSubdomain")}
                             />
                           </div>
                           <div>
-                            <Label htmlFor="amocrm-key">API Ключ</Label>
+                            <Label htmlFor="amocrm-key">Access Token</Label>
                             <Input
                               id="amocrm-key"
                               type="password"
-                              placeholder="Введите API ключ AmoCRM"
+                              placeholder="Введите Access Token AmoCRM"
                               {...apiKeysForm.register("amoCrmApiKey")}
                             />
                           </div>

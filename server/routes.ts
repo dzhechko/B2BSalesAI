@@ -98,14 +98,14 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const apiKeys = await storage.getApiKeys(req.user!.id);
-      if (!apiKeys?.amoCrmAccessToken || !apiKeys?.amoCrmSubdomain) {
+      if (!apiKeys?.amoCrmApiKey || !apiKeys?.amoCrmSubdomain) {
         return res.status(400).json({ message: "AmoCRM credentials not configured" });
       }
 
       // Fetch contacts from AmoCRM
       const amoCrmResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/contacts`, {
         headers: {
-          'Authorization': `Bearer ${apiKeys.amoCrmAccessToken}`,
+          'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
           'Content-Type': 'application/json',
         },
       });
