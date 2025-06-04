@@ -176,10 +176,35 @@ export function registerRoutes(app: Express): Server {
 
       const collectedData: SearchResult = {};
 
+      // Extract company name from AmoCRM data if not set
+      let companyName = contact.company;
+      if (!companyName && contact.amoCrmData) {
+        const amoCrmData = contact.amoCrmData as any;
+        if (amoCrmData._embedded?.companies?.[0]) {
+          // Fetch company details from AmoCRM
+          const companyId = amoCrmData._embedded.companies[0].id;
+          try {
+            const companyResponse = await fetch(`https://${apiKeys.amoCrmSubdomain}.amocrm.ru/api/v4/companies/${companyId}`, {
+              headers: {
+                'Authorization': `Bearer ${apiKeys.amoCrmApiKey}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            if (companyResponse.ok) {
+              const companyData = await companyResponse.json();
+              companyName = companyData.name;
+              console.log(`Extracted company name from AmoCRM: ${companyName}`);
+            }
+          } catch (error) {
+            console.error('Failed to fetch company from AmoCRM:', error);
+          }
+        }
+      }
+
       // Search for company information
-      if (contact.company) {
-        const companyQuery = `${contact.company} отрасль выручка сотрудники основные продукты 2024`;
-        console.log(`Starting data collection for company: ${contact.company}`);
+      if (companyName) {
+        const companyQuery = `${companyName} отрасль выручка сотрудники основные продукты 2024`;
+        console.log(`Starting data collection for company: ${companyName}`);
         console.log(`Search query: ${companyQuery}`);
         
         if (apiKeys.braveSearchApiKey) {
@@ -206,11 +231,13 @@ export function registerRoutes(app: Express): Server {
             collectedData.products = collectedData.products || perplexityResult.products;
           }
         }
+      } else {
+        console.log('No company name found for contact');
       }
 
       // Search for contact information
-      if (contact.name && contact.company) {
-        const contactQuery = `${contact.name} ${contact.company} LinkedIn должность социальные сети`;
+      if (contact.name && companyName) {
+        const contactQuery = `${contact.name} ${companyName} LinkedIn должность социальные сети`;
         
         if (apiKeys.braveSearchApiKey) {
           const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey);
