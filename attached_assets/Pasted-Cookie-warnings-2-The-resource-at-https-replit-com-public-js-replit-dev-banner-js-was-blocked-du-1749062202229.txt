@@ -1,0 +1,25 @@
+Cookie warnings 2
+The resource at “https://replit.com/public/js/replit-dev-banner.js” was blocked due to its Cross-Origin-Resource-Policy header (or lack thereof). See https://developer.mozilla.org/docs/Web/HTTP/Cross-Origin_Resource_Policy_(CORP)# b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev
+Loading failed for the <script> with source “https://replit.com/public/js/replit-dev-banner.js”. b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev:136:92
+[vite] connecting... client:495:8
+[vite] connected. client:618:14
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools react-dom.development.js:29895:16
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+a
+a
+Link<@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=7b43f2ca:337:18
+nav
+div
+div
+Sidebar@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/src/components/sidebar.tsx:33:22
+div
+Dashboard@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/src/pages/dashboard.tsx:29:47
+ProtectedRoute@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/src/lib/protected-route.tsx:21:31
+Switch@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=7b43f2ca:379:14
+Router
+Provider@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-UBQ2LXDH.js?v=7b43f2ca:22:47
+TooltipProvider@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=7b43f2ca:64:7
+ThemeProvider@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/src/lib/theme-provider.tsx:20:30
+AuthProvider@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/src/hooks/use-auth.tsx:26:29
+QueryClientProvider@https://b523985b-58bd-425c-90ef-a065141c4337-00-1v4jj5abapuvv.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=7b43f2ca:2804:27
+App
