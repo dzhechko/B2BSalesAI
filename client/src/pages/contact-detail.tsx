@@ -64,8 +64,21 @@ export default function ContactDetail() {
       const response = await apiRequest("POST", `/api/contacts/${contactId}/recommendations`, { model });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update contact in cache with new recommendations
+      queryClient.setQueryData(["/api/contacts", contactId], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            recommendations: data
+          };
+        }
+        return oldData;
+      });
+      
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/contacts", contactId] });
+      
       toast({
         title: "Успешно",
         description: "Рекомендации сгенерированы",
