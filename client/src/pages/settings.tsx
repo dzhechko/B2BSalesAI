@@ -73,9 +73,23 @@ export default function Settings() {
   // Update form values when data is loaded
   useEffect(() => {
     if (apiKeysStatus) {
-      // Only set subdomain if it exists, otherwise leave empty
+      // Set subdomain if it exists
       if (apiKeysStatus.amoCrmSubdomain) {
         apiKeysForm.setValue("amoCrmSubdomain", apiKeysStatus.amoCrmSubdomain);
+      }
+      
+      // Set placeholder values for existing keys to show they are configured
+      if (apiKeysStatus.hasAmoCrmToken) {
+        apiKeysForm.setValue("amoCrmApiKey", "••••••••••••••••");
+      }
+      if (apiKeysStatus.hasOpenAiKey) {
+        apiKeysForm.setValue("openaiApiKey", "••••••••••••••••");
+      }
+      if (apiKeysStatus.hasBraveSearchKey) {
+        apiKeysForm.setValue("braveSearchApiKey", "••••••••••••••••");
+      }
+      if (apiKeysStatus.hasPerplexityKey) {
+        apiKeysForm.setValue("perplexityApiKey", "••••••••••••••••");
       }
     }
   }, [apiKeysStatus, apiKeysForm]);
@@ -142,6 +156,13 @@ export default function Settings() {
     const newTheme = isDark ? "dark" : "light";
     setTheme(newTheme);
     settingsForm.setValue("theme", newTheme);
+  };
+
+  const handleKeyFieldFocus = (fieldName: keyof ApiKeysForm) => {
+    const currentValue = apiKeysForm.getValues(fieldName);
+    if (currentValue === "••••••••••••••••") {
+      apiKeysForm.setValue(fieldName, "");
+    }
   };
 
   return (
@@ -222,6 +243,7 @@ export default function Settings() {
                               placeholder="Введите Access Token AmoCRM"
                               autoComplete="new-password"
                               {...apiKeysForm.register("amoCrmApiKey")}
+                              onFocus={() => handleKeyFieldFocus("amoCrmApiKey")}
                             />
                           </div>
                         </div>
@@ -249,6 +271,7 @@ export default function Settings() {
                           placeholder="Введите API ключ OpenAI"
                           autoComplete="new-password"
                           {...apiKeysForm.register("openaiApiKey")}
+                          onFocus={() => handleKeyFieldFocus("openaiApiKey")}
                         />
                       </div>
 
