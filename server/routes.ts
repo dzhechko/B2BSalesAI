@@ -283,29 +283,26 @@ export function registerRoutes(app: Express): Server {
         console.log(`Starting data collection for company: ${companyName}`);
         console.log(`Search query: ${companyQuery}`);
         
+        // Collect data from both services and combine
+        let braveData: SearchResult | null = null;
+        let perplexityData: SearchResult | null = null;
+
         if (hasBraveEnabled) {
           console.log('Using Brave Search API');
           try {
-            const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey!);
-            console.log('Brave Search result:', braveResult);
-            if (braveResult) {
-              collectedData.industry = braveResult.industry;
-              collectedData.revenue = braveResult.revenue;
-              collectedData.employees = braveResult.employees;
-              collectedData.products = braveResult.products;
-              companySearchResults.push(`Brave Search: ${JSON.stringify(braveResult)}`);
-              
-              // Save detailed query and response
+            braveData = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey!);
+            console.log('Brave Search result:', braveData);
+            if (braveData) {
+              companySearchResults.push(`Brave Search: ${JSON.stringify(braveData)}`);
               collectedData.searchQueries!.push({
                 service: 'brave',
                 query: companyQuery,
-                response: JSON.stringify(braveResult),
-                fullResponse: braveResult.fullResponse,
+                response: JSON.stringify(braveData),
+                fullResponse: braveData.fullResponse,
                 timestamp: new Date().toISOString()
               });
             } else {
               console.log('Brave Search returned null - check API key or quota');
-              // Still save the query attempt even if it failed
               collectedData.searchQueries!.push({
                 service: 'brave',
                 query: companyQuery,
@@ -328,26 +325,31 @@ export function registerRoutes(app: Express): Server {
 
         if (hasPerplexityEnabled) {
           console.log('Using Perplexity API');
-          const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey!);
-          console.log('Perplexity Search result:', perplexityResult);
-          if (perplexityResult) {
-            // Perplexity has priority - overwrite data from Brave Search if better
-            collectedData.industry = perplexityResult.industry || collectedData.industry;
-            collectedData.revenue = perplexityResult.revenue || collectedData.revenue;
-            collectedData.employees = perplexityResult.employees || collectedData.employees;
-            collectedData.products = perplexityResult.products || collectedData.products;
-            companySearchResults.push(`Perplexity: ${JSON.stringify(perplexityResult)}`);
-            
-            // Save detailed query and response
+          perplexityData = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey!);
+          console.log('Perplexity Search result:', perplexityData);
+          if (perplexityData) {
+            companySearchResults.push(`Perplexity: ${JSON.stringify(perplexityData)}`);
             collectedData.searchQueries!.push({
               service: 'perplexity',
               query: companyQuery,
-              response: JSON.stringify(perplexityResult),
-              fullResponse: perplexityResult.fullResponse,
+              response: JSON.stringify(perplexityData),
+              fullResponse: perplexityData.fullResponse,
               timestamp: new Date().toISOString()
             });
           }
         }
+
+        // Combine data from both sources - prefer Perplexity but keep additional info from Brave
+        collectedData.industry = perplexityData?.industry || braveData?.industry;
+        collectedData.revenue = perplexityData?.revenue || braveData?.revenue;
+        collectedData.employees = perplexityData?.employees || braveData?.employees;
+        
+        // Combine products strings from both sources
+        const productsList = [
+          perplexityData?.products,
+          braveData?.products
+        ].filter(Boolean);
+        collectedData.products = productsList.length > 0 ? productsList.join(', ') : undefined;
 
         // Use GPT-4o to extract structured company data from search results
         if (apiKeys.openaiApiKey && companySearchResults.length > 0) {
@@ -439,20 +441,20 @@ ${companySearchResults.join('\n\n')}
         const contactQuery = `${contact.name} должность в ${companyName} 3 последние публикации в соц сетях`;
         console.log(`Starting contact search: ${contactQuery}`);
         
+        // Collect contact data from both services
+        let braveContactData: SearchResult | null = null;
+        let perplexityContactData: SearchResult | null = null;
+        
         if (hasBraveEnabled) {
           try {
-            const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey!);
-            if (braveContactResult) {
-              collectedData.jobTitle = braveContactResult.jobTitle;
-              collectedData.socialPosts = braveContactResult.socialPosts;
-              contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactResult)}`);
-              
-              // Save detailed query and response
+            braveContactData = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey!);
+            if (braveContactData) {
+              contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactData)}`);
               collectedData.searchQueries!.push({
                 service: 'brave',
                 query: contactQuery,
-                response: JSON.stringify(braveContactResult),
-                fullResponse: braveContactResult.fullResponse,
+                response: JSON.stringify(braveContactData),
+                fullResponse: braveContactData.fullResponse,
                 timestamp: new Date().toISOString()
               });
             } else {
@@ -478,23 +480,28 @@ ${companySearchResults.join('\n\n')}
         }
 
         if (hasPerplexityEnabled) {
-          const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey!);
-          if (perplexityContactResult) {
-            // Perplexity has priority for contact data too
-            collectedData.jobTitle = perplexityContactResult.jobTitle || collectedData.jobTitle;
-            collectedData.socialPosts = perplexityContactResult.socialPosts || collectedData.socialPosts;
-            contactSearchResults.push(`Perplexity: ${JSON.stringify(perplexityContactResult)}`);
-            
-            // Save detailed query and response
+          perplexityContactData = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey!);
+          if (perplexityContactData) {
+            contactSearchResults.push(`Perplexity: ${JSON.stringify(perplexityContactData)}`);
             collectedData.searchQueries!.push({
               service: 'perplexity',
               query: contactQuery,
-              response: JSON.stringify(perplexityContactResult),
-              fullResponse: perplexityContactResult.fullResponse,
+              response: JSON.stringify(perplexityContactData),
+              fullResponse: perplexityContactData.fullResponse,
               timestamp: new Date().toISOString()
             });
           }
         }
+
+        // Combine contact data from both sources
+        collectedData.jobTitle = perplexityContactData?.jobTitle || braveContactData?.jobTitle;
+        
+        // Combine social posts from both sources
+        const allSocialPosts = [
+          ...(perplexityContactData?.socialPosts || []),
+          ...(braveContactData?.socialPosts || [])
+        ];
+        collectedData.socialPosts = allSocialPosts.length > 0 ? allSocialPosts : undefined;
 
         // Use GPT-4o to extract structured contact data from search results
         if (apiKeys.openaiApiKey && contactSearchResults.length > 0) {
