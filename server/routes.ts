@@ -734,22 +734,29 @@ function getContactStatus(contact: AmoCRMContact): string {
 
 async function searchWithBrave(query: string, apiKey: string): Promise<SearchResult | null> {
   try {
+    console.log('Brave Search: Making API request with query:', query);
     const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}`, {
       headers: {
         'X-Subscription-Token': apiKey,
       },
     });
 
+    console.log('Brave Search: Response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Brave Search API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Brave Search API error response:', errorText);
+      throw new Error(`Brave Search API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Brave Search: Raw API response received, web results count:', data.web?.results?.length || 0);
     
     // Parse search results to extract structured data
     const result = parseSearchResults(data.web?.results || []);
     result.fullResponse = JSON.stringify(data, null, 2);
     
+    console.log('Brave Search: Parsed result:', result);
     return result;
   } catch (error) {
     console.error('Brave Search failed:', error);
