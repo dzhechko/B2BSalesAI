@@ -331,10 +331,11 @@ export function registerRoutes(app: Express): Server {
           const perplexityResult = await searchWithPerplexity(companyQuery, apiKeys.perplexityApiKey!);
           console.log('Perplexity Search result:', perplexityResult);
           if (perplexityResult) {
-            collectedData.industry = collectedData.industry || perplexityResult.industry;
-            collectedData.revenue = collectedData.revenue || perplexityResult.revenue;
-            collectedData.employees = collectedData.employees || perplexityResult.employees;
-            collectedData.products = collectedData.products || perplexityResult.products;
+            // Perplexity has priority - overwrite data from Brave Search if better
+            collectedData.industry = perplexityResult.industry || collectedData.industry;
+            collectedData.revenue = perplexityResult.revenue || collectedData.revenue;
+            collectedData.employees = perplexityResult.employees || collectedData.employees;
+            collectedData.products = perplexityResult.products || collectedData.products;
             companySearchResults.push(`Perplexity: ${JSON.stringify(perplexityResult)}`);
             
             // Save detailed query and response
@@ -479,8 +480,9 @@ ${companySearchResults.join('\n\n')}
         if (hasPerplexityEnabled) {
           const perplexityContactResult = await searchWithPerplexity(contactQuery, apiKeys.perplexityApiKey!);
           if (perplexityContactResult) {
-            collectedData.jobTitle = collectedData.jobTitle || perplexityContactResult.jobTitle;
-            collectedData.socialPosts = collectedData.socialPosts || perplexityContactResult.socialPosts;
+            // Perplexity has priority for contact data too
+            collectedData.jobTitle = perplexityContactResult.jobTitle || collectedData.jobTitle;
+            collectedData.socialPosts = perplexityContactResult.socialPosts || collectedData.socialPosts;
             contactSearchResults.push(`Perplexity: ${JSON.stringify(perplexityContactResult)}`);
             
             // Save detailed query and response
