@@ -285,21 +285,42 @@ export function registerRoutes(app: Express): Server {
         
         if (hasBraveEnabled) {
           console.log('Using Brave Search API');
-          const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey!);
-          console.log('Brave Search result:', braveResult);
-          if (braveResult) {
-            collectedData.industry = braveResult.industry;
-            collectedData.revenue = braveResult.revenue;
-            collectedData.employees = braveResult.employees;
-            collectedData.products = braveResult.products;
-            companySearchResults.push(`Brave Search: ${JSON.stringify(braveResult)}`);
-            
-            // Save detailed query and response
+          try {
+            const braveResult = await searchWithBrave(companyQuery, apiKeys.braveSearchApiKey!);
+            console.log('Brave Search result:', braveResult);
+            if (braveResult) {
+              collectedData.industry = braveResult.industry;
+              collectedData.revenue = braveResult.revenue;
+              collectedData.employees = braveResult.employees;
+              collectedData.products = braveResult.products;
+              companySearchResults.push(`Brave Search: ${JSON.stringify(braveResult)}`);
+              
+              // Save detailed query and response
+              collectedData.searchQueries!.push({
+                service: 'brave',
+                query: companyQuery,
+                response: JSON.stringify(braveResult),
+                fullResponse: braveResult.fullResponse,
+                timestamp: new Date().toISOString()
+              });
+            } else {
+              console.log('Brave Search returned null - check API key or quota');
+              // Still save the query attempt even if it failed
+              collectedData.searchQueries!.push({
+                service: 'brave',
+                query: companyQuery,
+                response: 'Поиск не выполнен - проверьте API ключ или квоту',
+                fullResponse: 'Ошибка выполнения запроса',
+                timestamp: new Date().toISOString()
+              });
+            }
+          } catch (error) {
+            console.error('Brave Search error:', error);
             collectedData.searchQueries!.push({
               service: 'brave',
               query: companyQuery,
-              response: JSON.stringify(braveResult),
-              fullResponse: braveResult.fullResponse,
+              response: `Ошибка: ${error instanceof Error ? error.message : String(error)}`,
+              fullResponse: 'Ошибка выполнения запроса',
               timestamp: new Date().toISOString()
             });
           }
@@ -418,18 +439,38 @@ ${companySearchResults.join('\n\n')}
         console.log(`Starting contact search: ${contactQuery}`);
         
         if (hasBraveEnabled) {
-          const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey!);
-          if (braveContactResult) {
-            collectedData.jobTitle = braveContactResult.jobTitle;
-            collectedData.socialPosts = braveContactResult.socialPosts;
-            contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactResult)}`);
-            
-            // Save detailed query and response
+          try {
+            const braveContactResult = await searchWithBrave(contactQuery, apiKeys.braveSearchApiKey!);
+            if (braveContactResult) {
+              collectedData.jobTitle = braveContactResult.jobTitle;
+              collectedData.socialPosts = braveContactResult.socialPosts;
+              contactSearchResults.push(`Brave Search: ${JSON.stringify(braveContactResult)}`);
+              
+              // Save detailed query and response
+              collectedData.searchQueries!.push({
+                service: 'brave',
+                query: contactQuery,
+                response: JSON.stringify(braveContactResult),
+                fullResponse: braveContactResult.fullResponse,
+                timestamp: new Date().toISOString()
+              });
+            } else {
+              console.log('Brave Contact Search returned null - check API key or quota');
+              collectedData.searchQueries!.push({
+                service: 'brave',
+                query: contactQuery,
+                response: 'Поиск контакта не выполнен - проверьте API ключ или квоту',
+                fullResponse: 'Ошибка выполнения запроса',
+                timestamp: new Date().toISOString()
+              });
+            }
+          } catch (error) {
+            console.error('Brave Contact Search error:', error);
             collectedData.searchQueries!.push({
               service: 'brave',
               query: contactQuery,
-              response: JSON.stringify(braveContactResult),
-              fullResponse: braveContactResult.fullResponse,
+              response: `Ошибка поиска контакта: ${error instanceof Error ? error.message : String(error)}`,
+              fullResponse: 'Ошибка выполнения запроса',
               timestamp: new Date().toISOString()
             });
           }
