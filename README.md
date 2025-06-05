@@ -119,20 +119,20 @@ graph TB
     end
     
     subgraph "🛣️ API Endpoints"
-        C1[/api/auth/* - Authentication]
-        C2[/api/contacts/* - Contact Management]
-        C3[/api/keys - API Keys Management]
-        C4[/api/settings - User Settings]
-        C5[/api/recommendations - AI Analysis]
+        C1["API Auth - Authentication"]
+        C2["API Contacts - Contact Management"]
+        C3["API Keys - API Keys Management"]
+        C4["API Settings - User Settings"]
+        C5["API Recommendations - AI Analysis"]
         
         C1 --> B1
     end
     
     subgraph "💡 AI Processing Modules"
-        D1[searchWithBrave - Web Search]
-        D2[searchWithPerplexity - AI Search]
-        D3[OpenAI Integration - Content Analysis]
-        D4[Data Fusion Engine - Combine Results]
+        D1["Brave Search - Web Search"]
+        D2["Perplexity - AI Search"]
+        D3["OpenAI Integration - Content Analysis"]
+        D4["Data Fusion Engine - Combine Results"]
         
         D1 --> D4
         D2 --> D4
@@ -140,10 +140,10 @@ graph TB
     end
     
     subgraph "🗄️ Database Schema"
-        E1[users - User Accounts]
-        E2[api_keys - Encrypted API Keys]
-        E3[user_settings - Preferences]
-        E4[contacts - Contact Data]
+        E1["users - User Accounts"]
+        E2["api_keys - Encrypted API Keys"]
+        E3["user_settings - Preferences"]
+        E4["contacts - Contact Data"]
         
         E1 --> E2
         E1 --> E3
@@ -151,9 +151,9 @@ graph TB
     end
     
     subgraph "🔧 Storage Interface"
-        F1[IStorage Interface]
-        F2[DatabaseStorage Implementation]
-        F3[Encryption/Decryption Utils]
+        F1["IStorage Interface"]
+        F2["DatabaseStorage Implementation"]
+        F3["Encryption/Decryption Utils"]
         
         F1 --> F2
         F2 --> F3
