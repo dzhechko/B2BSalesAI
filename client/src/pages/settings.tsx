@@ -299,6 +299,7 @@ export default function Settings() {
                           placeholder="Введите API ключ Brave Search"
                           autoComplete="new-password"
                           {...apiKeysForm.register("braveSearchApiKey")}
+                          onFocus={() => handleKeyFieldFocus("braveSearchApiKey")}
                         />
                       </div>
 
@@ -326,6 +327,7 @@ export default function Settings() {
                           placeholder="Введите API ключ Perplexity"
                           autoComplete="new-password"
                           {...apiKeysForm.register("perplexityApiKey")}
+                          onFocus={() => handleKeyFieldFocus("perplexityApiKey")}
                         />
                       </div>
 
