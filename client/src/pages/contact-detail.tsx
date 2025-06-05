@@ -434,10 +434,13 @@ export default function ContactDetail() {
                       </span>
                       <div className="mt-2 space-y-2">
                         {(contact.collectedData as CollectedData)?.socialPosts && (contact.collectedData as CollectedData).socialPosts!.length > 0 ? (
-                          (contact.collectedData as CollectedData).socialPosts!.slice(0, 3).map((post: any, index: number) => (
+                          (contact.collectedData as CollectedData).socialPosts!
+                            .filter((post: any) => post && post.content && post.platform)
+                            .slice(0, 3)
+                            .map((post: any, index: number) => (
                             <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
                               <p className="font-medium text-gray-900 dark:text-white">
-                                {post.platform} • {post.date}
+                                {post.platform} • {post.date || 'Дата не указана'}
                               </p>
                               <p className="text-gray-600 dark:text-gray-300 mt-1">
                                 {post.content.length > 100 
